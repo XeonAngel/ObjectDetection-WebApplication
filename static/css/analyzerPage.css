@@ -1,0 +1,130 @@
+.button-group {
+    width: 100%;
+    margin-top: 100px;
+}
+
+.button-group .button {
+    width: 50%;
+    height: 45px;
+    background-color: #E2ECFF;
+    border: 1px solid darkgray;
+    color: #5fa2db;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    float: left;
+}
+
+.button-group .button:not(:last-child) {
+    border-right: none; /* Prevent double borders */
+}
+
+.button-group .active, .button-group .button:hover {
+    background-color: #8860D0;
+    color: #F2F2F2;
+}
+
+.button-group .left_button{
+    border-top-left-radius: 6px;
+}
+
+.button-group .right_button{
+    border-top-right-radius: 6px;
+}
+
+.upload_data, .analyze_data{
+    text-align: center;
+    width: 100%;
+    height: auto;
+    background-color: white;
+    border: 1px solid darkgray;
+    border-top: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.upload_data .button, .analyze_data .button{
+    width: 200px;
+    height: 40px;
+    border-radius: 6px;
+    background-color: #5680E9;
+    color: #F2F2F2;
+    text-align: center;
+    cursor: pointer;
+    margin-top: 8%;
+    margin-right: 3%;
+    margin-left: 3%;
+}
+
+.upload_data .left_button{
+    margin-left: 16%;
+}
+
+.upload_data .right_button{
+    margin-right: 16%;
+}
+
+.upload_data .progress_bar{
+    margin-top: 8%;
+
+}
+
+.upload_data .progress, .analyze_data .progress{
+    margin-right: 17%;
+    margin-left: 17%;
+}
+
+.alert{
+    margin: 3%;
+    width: 200px;
+}
+
+#analyzeDiv{
+    display: none;
+}
+
+.analyze_data .button{
+    margin-top: 4%;
+    margin-right: 3%;
+    margin-left: 3%;
+}
+
+.classifier_dropdown{
+    padding-top: 2%;
+}
+
+.classifier_dropdown .btn {
+    background-color: #5680E9;
+    width: 200px;
+}
+
+.absolutePos{
+    position: relative;
+}
+
+.classifier_dropdown .right-relative{
+    position: absolute;
+    cursor: pointer;
+    right: 37%;
+    bottom: -5px;
+    color: #111111;
+}
+
+.classifier_dropdown .dropdown-menu{
+    background-color: #5680E9;
+    width: 200px;
+    text-align: center;
+}
+.classifier_dropdown .dropdown-menu a{
+    color: #F2F2F2;
+}
+
+.analyze_data .progress_bar{
+    margin-top: 2%;
+}
+
+.analyze_data .result{
+    margin-top: 1%;
+    margin-bottom: 4%;
+}

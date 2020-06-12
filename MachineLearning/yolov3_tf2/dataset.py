@@ -69,7 +69,7 @@ def transform_targets(y_train, anchors, anchor_masks, size):
 
     return tuple(y_outs)
 
-
+#Used
 def transform_images(x_train, size):
     x_train = tf.image.resize(x_train, (size, size))
     x_train = x_train / 255
@@ -119,9 +119,9 @@ def parse_tfrecord(tfrecord, class_table, size):
 
 
 def load_tfrecord_dataset(file_pattern, class_file, size=416):
-    LINE_NUMBER = -1  # TODO: use tf.lookup.TextFileIndex.LINE_NUMBER
+
     class_table = tf.lookup.StaticHashTable(tf.lookup.TextFileInitializer(
-        class_file, tf.string, 0, tf.int64, LINE_NUMBER, delimiter="\n"), -1)
+        class_file, tf.string, 0, tf.int64, tf.lookup.TextFileIndex.LINE_NUMBER, delimiter="\n"), -1)
 
     files = tf.data.Dataset.list_files(file_pattern)
     dataset = files.flat_map(tf.data.TFRecordDataset)

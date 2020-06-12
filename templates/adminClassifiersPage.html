@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+</head>
+
+<body>
+{% include "adminNavBar.html" %}
+
+<div class="container">
+    <div class="Search_Container">
+        <input type="text" id="searchClassifier" onkeyup="searchClassifier()" placeholder="Search for classifier..">
+        <div class="row">
+            <div class="col-sm">
+                <ul role="listbox" tabindex="0" aria-label="email list">
+                    <li tabindex="-1" role="option" aria-checked="false">
+                        <input tabindex="-1" id="check1" class="o-checkbox" type="checkbox"><label for="check1"></label>
+                        Important information about your account
+                    </li>
+                </ul>
+            </div>
+            <div class="col">
+              One of three columns
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

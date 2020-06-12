@@ -1,0 +1,51 @@
+@import url(https://fonts.googleapis.com/css?family=Titillium+Web:300);
+
+body{
+    font-size: 16px;
+    font-family: 'Titillium Web', "Calibri Light";
+}
+
+@font-face {
+    font-family: 'Titillium Web';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Titillium WebLight'), local('TitilliumWeb-Light'), url(http://themes.googleusercontent.com/static/fonts/titilliumweb/v2/anMUvcNT0H1YN4FII8wpr24bNCNEoFTpS2BTjF6FB5E.woff) format('woff');
+}
+
+#classifiersList {
+    list-style-type: none;
+	padding-left: 0px;
+}
+
+.classifier_item{
+    color: white;
+    border-radius: 6px;
+    background-color: #5680E9;
+    display: inline-block;
+    margin-top: 6px;
+    padding: 6px;
+    width: 37vh;
+    /*min-width: 16em;*/
+}
+
+.row{
+    margin: 0px;
+    height: 100%;
+    text-align: center;
+}
+
+.column {
+    padding: 10px;
+    width: 75%;
+    height: 100vh;
+}
+
+.left-col {
+    border-right: 1px solid darkgray;
+    width: 25%;
+}
+
+#classListID{
+    width: 100%;
+    height: 100%;
+}

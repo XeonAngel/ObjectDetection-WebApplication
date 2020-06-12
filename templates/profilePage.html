@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+</head>
+
+<body>
+{% if isAdminOnPage %}
+{% extends "adminNavBar.html" %}
+{% else %}
+{% extends "userNavBar.html" %}
+{% endif %}
+</body>
+</html>

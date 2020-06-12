@@ -1,0 +1,11 @@
+{%for firstFiveClass in firstFiveClassList%}
+<div class="classList" style="display:block">
+    <input name="classCheckBox" type="checkbox" value="{{firstFiveClass[0]}}">{{firstFiveClass[0]}}
+</div>
+{%endfor%}
+
+{%for classes in classList%}
+<div class="classList" style="display:none">
+    <input name="classCheckBox" type="checkbox" value="{{classes[0]}}">{{classes[0]}}
+</div>
+{%endfor%}
