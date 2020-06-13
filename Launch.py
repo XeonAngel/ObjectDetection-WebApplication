@@ -12,6 +12,7 @@ db = SQLAlchemy(app)
 class Classifiers(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+
     classes = db.relationship('Classes', backref='classifier')
 
     def __init__(self, name):
@@ -23,9 +24,53 @@ class Classes(db.Model):
     name = db.Column(db.String(100), nullable=False)
     classifierId = db.Column(db.Integer, db.ForeignKey("classifiers.id"), nullable=False)
 
+    historyClasses = db.relationship('HistoryClasses', backref='class')
+
     def __init__(self, name, classifierId):
         self.name = name
         self.classifierId = classifierId
+
+
+class Users(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.String(1000), nullable=False)
+    isAdmin = db.Column(db.Boolean, nullable=False)
+
+    history = db.relationship('History', backref='user')
+
+    def __init__(self, username, email, password, isAdmin):
+        self.username = username
+        self.email = email
+        self.password = password
+        self.isAdmin = isAdmin
+
+
+class History(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    imagePath = db.Column(db.Text, nullable=False)
+    scanDate = db.Column(db.Date, nullable=False)
+    isLastScan = db.Column(db.Boolean, nullable=False)
+    userId = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    historyClasses = db.relationship('HistoryClasses', backref='history')
+
+    def __init__(self, imagePath, scanDate, isLastScan, userId):
+        self.imagePath = imagePath
+        self.scanDate = scanDate
+        self.isLastScan = isLastScan
+        self.userId = userId
+
+
+class HistoryClasses(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    historyId = db.Column(db.Integer, db.ForeignKey("history.id"), nullable=False)
+    classId = db.Column(db.Integer, db.ForeignKey("classes.id"), nullable=False)
+
+    def __init__(self, historyId, classId):
+        self.historyId = historyId
+        self.classId = classId
 
 
 # ----------------------Models Region
@@ -34,7 +79,7 @@ class Classes(db.Model):
 # db.drop_all()
 # db.create_all()
 
-isAdmin = False
+isAdminSet = False
 
 
 # ----------------------Temp Region
@@ -49,7 +94,7 @@ def home():
 # ----------------------Analyzer Region
 @app.route("/analyzer")
 def analyzer():
-    return render_template("analyzerPage.html", isAdminOnPage=isAdmin)
+    return render_template("analyzerPage.html", isAdminOnPage=isAdminSet)
 
 
 # ----------------------Analyzer Region
@@ -58,7 +103,7 @@ def analyzer():
 # ----------------------Classifiers Region
 @app.route("/classifiers")
 def classifiers():
-    if isAdmin:
+    if isAdminSet:
         return render_template("adminClassifiersPage.html")
     return render_template("userClassifiersPage.html")
 
@@ -66,6 +111,7 @@ def classifiers():
 @app.route("/userclassifierslist/<classToFind>")
 def userclassifierslist(classToFind):
     # TODO: Move Classifers to another iframe just add mode than one page can see and test it
+    # TODO: Alphabetic Sort
     if classToFind == "all":
         classifierList = db.session.query(Classifiers.name).all()
     else:
@@ -94,7 +140,7 @@ def classesforclassifier(classifier):
 
 
 # ----------------------History Region
-@app.route("/history")
+@app.route("/history", methods=['GET', 'POST'])
 def history():
     classifierList = db.session.query(Classifiers.name).all()
     classList = db.session.query(Classes.name).distinct(Classes.name).all()
@@ -102,10 +148,22 @@ def history():
     for i in range(0, 5):
         if len(classList) != 0:
             firstFiveClassList.append(classList.pop(0))
-    return render_template("historyPage.html", isAdminOnPage=isAdmin,
-                           classifierList=classifierList,
-                           classList=classList,
-                           firstFiveClassList=firstFiveClassList)
+
+    if request.method == 'POST':
+        classifierName = request.form["classifierName"]
+        ClassList = request.form.getlist("classCheckBox")
+        usernameId = 1  # TODO Set Session Username
+
+
+        return render_template("historyPage.html", isAdminOnPage=isAdminSet,
+                               classifierList=classifierList,
+                               classList=classList,
+                               firstFiveClassList=firstFiveClassList)
+    else:
+        return render_template("historyPage.html", isAdminOnPage=isAdminSet,
+                               classifierList=classifierList,
+                               classList=classList,
+                               firstFiveClassList=firstFiveClassList)
 
 
 @app.route("/updateHistoryClasses", methods=['POST'])
@@ -135,7 +193,7 @@ def updateHistoryClasses():
 # ----------------------Profile Region
 @app.route("/profile")
 def profile():
-    return render_template("profilePage.html", isAdminOnPage=isAdmin)
+    return render_template("profilePage.html", isAdminOnPage=isAdminSet)
 
 
 # ----------------------Profile Region

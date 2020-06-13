@@ -1,7 +1,7 @@
 $(document).ready(function () {
 
-    var date_input = $('input[name="date"]');
-    var options = {
+    const date_input = $('input[name="date"]');
+    const options = {
         format: "dd/mm/yyyy",
         weekStart: 1,
         todayBtn: "linked",
@@ -45,6 +45,7 @@ $(document).ready(function () {
 
     $('#ClassifiersControlSelect').change(function () {
         const classifier = $(this).val();
+        $('#classifierName').val(classifier);
 
         let req = $.ajax({
             url: '/updateHistoryClasses',

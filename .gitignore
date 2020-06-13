@@ -4,10 +4,12 @@
 *.tar
 *.tfrecord
 *.pyc
-/MachineLearning/checkpoints/*
+/MachineLearning/checkpoints/
+!/MachineLearning/checkpoints/.gitkeep
 /MachineLearning/serving/*
 /MachineLearning/logs/
-/MachineLearning/output/output.*
+/MachineLearning/output/
+!/MachineLearning/output/.gitkeep
 /MachineLearning/data/voc2012_raw/
 /MachineLearning/data/yolov3.weights
 

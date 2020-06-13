@@ -21,7 +21,7 @@
 <div class="container">
 
     <div class="column">
-        <form>
+        <form action="#" method="post">
             <div>
                 Filers
             </div>
@@ -34,6 +34,7 @@
                     {%endfor%}
                 </select>
             </div>
+            <input id="classifierName" name="classifierName" type="text" value="All Classifiers" style="display: none">
 
             <div class="Search_Container">
                 <input id="searchClass" placeholder="Search for class.." type="text">
@@ -58,8 +59,9 @@
                 <input class="form-control" id="date" name="date" placeholder="DD/MM/YYYY" type="text"/>
             </div>
 
-
             <button type="submit">Apply filters</button>
+
+<!--            <button class="button">Clear all filters</button>-->
         </form>
     </div>
     <div class="column">
