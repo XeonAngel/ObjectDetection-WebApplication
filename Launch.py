@@ -168,12 +168,16 @@ def history():
             takenDateFilter = datetime.datetime.strptime(takenDateString, '%d/%m/%Y')
             filterList.append(History.scanDate == takenDateFilter.date())
 
-        # for classType in classFilterList:
-        #     filterList.append()
+        if classFilterList:
+            filterList.append(Classes.name.in_(classFilterList))
 
-        imagePaths = db.session.query(History, Classifiers) \
+        imagePaths = db.session.query(History.imagePath, Classes.name) \
             .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
+            .outerjoin(HistoryClasses, HistoryClasses.historyId == History.id) \
+            .outerjoin(Classes, Classes.id == HistoryClasses.classId) \
             .filter(*filterList) \
+            .group_by(History.id) \
+            .having(db.func.count(HistoryClasses.classId.distinct()) == len(set(classFilterList))) \
             .all()
 
         return render_template("historyPage.html", isAdminOnPage=isAdminSet,
