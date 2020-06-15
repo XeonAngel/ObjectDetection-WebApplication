@@ -1,5 +1,5 @@
 import datetime
-from flask import Flask, render_template, redirect, url_for, jsonify, request
+from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -153,11 +153,13 @@ def history():
         if len(classList) != 0:
             firstFiveClassList.append(classList.pop(0))
 
+    usernameId = 1  # TODO Set Session Username
+    username = 'Admin'  # TODO Set Session Username
+
     if request.method == 'POST':
         classifierFilterName = request.form.get("classifierName")
         classFilterList = request.form.getlist("classCheckBox")
         takenDateString = request.form.get("date")
-        usernameId = 1  # TODO Set Session Username
 
         filterList = [History.userId == usernameId]
 
@@ -170,25 +172,53 @@ def history():
 
         if classFilterList:
             filterList.append(Classes.name.in_(classFilterList))
-
-        imagePaths = db.session.query(History.imagePath, Classes.name) \
-            .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
-            .outerjoin(HistoryClasses, HistoryClasses.historyId == History.id) \
-            .outerjoin(Classes, Classes.id == HistoryClasses.classId) \
-            .filter(*filterList) \
-            .group_by(History.id) \
-            .having(db.func.count(HistoryClasses.classId.distinct()) == len(set(classFilterList))) \
-            .all()
+            imagePaths = db.session.query(History.imagePath) \
+                .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
+                .outerjoin(HistoryClasses, HistoryClasses.historyId == History.id) \
+                .outerjoin(Classes, Classes.id == HistoryClasses.classId) \
+                .filter(*filterList) \
+                .group_by(History.id) \
+                .having(db.func.count(HistoryClasses.classId.distinct()) == len(set(classFilterList))) \
+                .all()
+        else:
+            imagePaths = db.session.query(History.imagePath, History.id) \
+                .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
+                .outerjoin(HistoryClasses, HistoryClasses.historyId == History.id) \
+                .outerjoin(Classes, Classes.id == HistoryClasses.classId) \
+                .filter(*filterList) \
+                .group_by(History.id) \
+                .all()
 
         return render_template("historyPage.html", isAdminOnPage=isAdminSet,
                                classifierList=classifierList,
                                classList=classList,
-                               firstFiveClassList=firstFiveClassList)
+                               firstFiveClassList=firstFiveClassList,
+                               imagePaths=imagePaths,
+                               searchResultNumber=len(imagePaths),
+                               givenUsername=username)
     else:
         return render_template("historyPage.html", isAdminOnPage=isAdminSet,
                                classifierList=classifierList,
                                classList=classList,
-                               firstFiveClassList=firstFiveClassList)
+                               firstFiveClassList=firstFiveClassList,
+                               imagePaths="",
+                               searchResultNumber=-1,
+                               givenUsername=username)
+
+
+@app.route("/historyImage/<username>/<filename>")
+def giveImageFromDirectory(username, filename):
+    imageUrl = username + "/" + filename
+    return send_from_directory("MachineLearning/output/", imageUrl)
+
+
+@app.route("/historyImageClasses", methods=['POST'])
+def giveClassesForImage():
+    classList = db.session.query(HistoryClasses.numberOfClasses, Classes.name) \
+        .outerjoin(Classes, Classes.id == HistoryClasses.classId) \
+        .filter(HistoryClasses.historyId == request.form['historyId']) \
+        .all()
+    return render_template("historyPage/historyPageImagePreviewClasses.html", classList=classList)
 
 
 @app.route("/updateHistoryClasses", methods=['POST'])

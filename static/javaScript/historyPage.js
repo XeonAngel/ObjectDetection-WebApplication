@@ -59,4 +59,22 @@ $(document).ready(function () {
 
     })
 
+    $('.pop').on('click', function () {
+        let imgSrc = $(this).find('img').attr('src');
+        let imgId = $(this).find('img').attr('id');
+
+        $('.imagepreview').attr('src', imgSrc);
+        $('#imagemodal').modal('show');
+
+        let req = $.ajax({
+            url: '/historyImageClasses',
+            type: 'POST',
+            data: {historyId: imgId}
+        })
+
+        req.done(function (data) {
+            $("#imagePreviewClassesSection").html(data);
+        })
+    });
+
 });

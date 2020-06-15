@@ -6,8 +6,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"
           rel="stylesheet"/>
     <link href="/static/css/baseStyle.css" rel="stylesheet">
-    <!--    <link href="/static/css/analyzerPage.css" rel="stylesheet">-->
-    
+    <link href="/static/css/historyPage.css" rel="stylesheet">
+
 </head>
 
 <body>
@@ -34,7 +34,7 @@
                     {%endfor%}
                 </select>
             </div>
-            <input id="classifierName" name="classifierName" type="text" value="All Classifiers" style="display: none">
+            <input id="classifierName" name="classifierName" style="display: none" type="text" value="All Classifiers">
 
             <div class="Search_Container">
                 <input id="searchClass" placeholder="Search for class.." type="text">
@@ -61,14 +61,42 @@
 
             <button type="submit">Apply filters</button>
 
-<!--            <button class="button">Clear all filters</button>-->
+            <!--            <button class="button">Clear all filters</button>-->
         </form>
     </div>
     <div class="column">
-
+        {%if searchResultNumber!=-1%}
+        {{searchResultNumber}} results found.
+        {% endif %}
+        <div class="image_result">
+            {%if imagePaths!=""%}
+            {%for imagePath in imagePaths%}
+            <a class="pop" href="#">
+                <img id="{{imagePath.id}}"
+                     src="{{url_for('giveImageFromDirectory',username=givenUsername, filename = imagePath.imagePath)}}"
+                     style="width: 400px; height: 264px;">
+            </a>
+            {%endfor%}
+            {% endif %}
+        </div>
     </div>
 </div>
 
+<div aria-hidden="true" aria-labelledby="myModalLabel" class="modal fade" id="imagemodal" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Close</span>
+                </button>
+                <img class="imagepreview" src="" style="width: 100%;">
+                <div id="imagePreviewClassesSection">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script crossorigin="anonymous" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
         src="https://code.jquery.com/jquery-3.5.1.js"></script>
