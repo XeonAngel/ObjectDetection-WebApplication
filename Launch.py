@@ -1,3 +1,4 @@
+import datetime
 from flask import Flask, render_template, redirect, url_for, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 
@@ -14,6 +15,7 @@ class Classifiers(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
 
     classes = db.relationship('Classes', backref='classifier')
+    historyClassifier = db.relationship("History", backref='classifier')
 
     def __init__(self, name):
         self.name = name
@@ -52,6 +54,7 @@ class History(db.Model):
     imagePath = db.Column(db.Text, nullable=False)
     scanDate = db.Column(db.Date, nullable=False)
     isLastScan = db.Column(db.Boolean, nullable=False)
+    classifierId = db.Column(db.Integer, db.ForeignKey("classifiers.id"), nullable=False)
     userId = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     historyClasses = db.relationship('HistoryClasses', backref='history')
@@ -67,6 +70,7 @@ class HistoryClasses(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     historyId = db.Column(db.Integer, db.ForeignKey("history.id"), nullable=False)
     classId = db.Column(db.Integer, db.ForeignKey("classes.id"), nullable=False)
+    numberOfClasses = db.Column(db.Integer, nullable=False)
 
     def __init__(self, historyId, classId):
         self.historyId = historyId
@@ -150,10 +154,27 @@ def history():
             firstFiveClassList.append(classList.pop(0))
 
     if request.method == 'POST':
-        classifierName = request.form["classifierName"]
-        ClassList = request.form.getlist("classCheckBox")
+        classifierFilterName = request.form.get("classifierName")
+        classFilterList = request.form.getlist("classCheckBox")
+        takenDateString = request.form.get("date")
         usernameId = 1  # TODO Set Session Username
 
+        filterList = [History.userId == usernameId]
+
+        if classifierFilterName != 'All Classifiers':
+            filterList.append(Classifiers.name == classifierFilterName)
+
+        if takenDateString != '':
+            takenDateFilter = datetime.datetime.strptime(takenDateString, '%d/%m/%Y')
+            filterList.append(History.scanDate == takenDateFilter.date())
+
+        # for classType in classFilterList:
+        #     filterList.append()
+
+        imagePaths = db.session.query(History, Classifiers) \
+            .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
+            .filter(*filterList) \
+            .all()
 
         return render_template("historyPage.html", isAdminOnPage=isAdminSet,
                                classifierList=classifierList,

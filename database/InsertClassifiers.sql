@@ -1,3 +1,3 @@
 INSERT INTO "main"."classifiers"
 ("name")
-VALUES ('General');
+VALUES ('General'), ('Test');
