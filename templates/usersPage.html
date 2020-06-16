@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link crossorigin="anonymous" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" rel="stylesheet">
+    <link href="/static/css/baseStyle.css" rel="stylesheet">
+    <link href="/static/css/usersPage.css" rel="stylesheet">
+</head>
+
+<body>
+{% include "navBars/adminNavBar.html" %}
+
+<div class="container">
+    <ul class="list-group">
+        {% for user in userList%}
+        <li class="list-group-item">
+            <span class="username">Username: {{user.username}}</span>
+            <span class="totalImagesScanned">Total Images Scanned: {{user.TotalImagesScanned}}</span>
+            <br>
+            <span class="email">Email: {{user.email}}</span>
+            <span class="name">Last classifier used: {{user.name}}</span>
+            <button class="btn btn-default btn-xs pull-right remove-item">
+                <span class="glyphicon glyphicon-remove">X</span>
+            </button>
+            <br>
+            <span class="lastTimeSeen">Last time seen: {{user.lastTimeSeen.day}}/{{user.lastTimeSeen.month}}/{{user.lastTimeSeen.year}} {{user.lastTimeSeen.hour}}:{{user.lastTimeSeen.minute}}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+</body>
+</html>

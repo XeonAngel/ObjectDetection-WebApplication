@@ -25,7 +25,8 @@
 .main-menu {
     background: #5680E9;
     border-right: 1px solid #e5e5e5;
-    position: absolute;
+    position: fixed;
+    /*position: relative*/
     top: 0;
     bottom: 0;
     height: 100%;

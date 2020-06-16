@@ -39,14 +39,17 @@ class Users(db.Model):
     email = db.Column(db.String(200), nullable=False)
     password = db.Column(db.String(1000), nullable=False)
     isAdmin = db.Column(db.Boolean, nullable=False)
+    lastTimeSeen = db.Column(db.DateTime, nullable=True)
+    TotalImagesScanned = db.Column(db.Integer, nullable=False)
 
     history = db.relationship('History', backref='user')
 
-    def __init__(self, username, email, password, isAdmin):
+    def __init__(self, username, email, password, isAdmin, TotalImagesScanned):
         self.username = username
         self.email = email
         self.password = password
         self.isAdmin = isAdmin
+        self.TotalImagesScanned = TotalImagesScanned
 
 
 class History(db.Model):
@@ -59,10 +62,11 @@ class History(db.Model):
 
     historyClasses = db.relationship('HistoryClasses', backref='history')
 
-    def __init__(self, imagePath, scanDate, isLastScan, userId):
+    def __init__(self, imagePath, scanDate, isLastScan, classifierId, userId):
         self.imagePath = imagePath
         self.scanDate = scanDate
         self.isLastScan = isLastScan
+        self.classifierId = classifierId
         self.userId = userId
 
 
@@ -72,9 +76,10 @@ class HistoryClasses(db.Model):
     classId = db.Column(db.Integer, db.ForeignKey("classes.id"), nullable=False)
     numberOfClasses = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, historyId, classId):
+    def __init__(self, historyId, classId, numberOfClasses):
         self.historyId = historyId
         self.classId = classId
+        self.numberOfClasses = numberOfClasses
 
 
 # ----------------------Models Region
@@ -83,7 +88,7 @@ class HistoryClasses(db.Model):
 # db.drop_all()
 # db.create_all()
 
-isAdminSet = False
+isAdminSet = True
 
 
 # ----------------------Temp Region
@@ -92,7 +97,7 @@ isAdminSet = False
 @app.route("/")
 def home():
     # return render_template("login.html")
-    return redirect(url_for("history"))
+    return redirect(url_for("users"))
 
 
 # ----------------------Analyzer Region
@@ -243,6 +248,28 @@ def updateHistoryClasses():
 
 
 # ----------------------History Region
+
+
+# ----------------------Profile Region
+@app.route("/users")
+def users():
+    # TODO: Toate functiile ce tin de admin sa verifica daca este un admin setat
+    userList = db.session.query(Users.username, Users.email, Users.lastTimeSeen, Users.TotalImagesScanned,
+                                Classifiers.name) \
+        .outerjoin(History, History.userId == Users.id) \
+        .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
+        .group_by(Users.username) \
+        .filter(Users.isAdmin == 0) \
+        .all()
+
+    return render_template("usersPage.html", userList=userList)
+
+@app.route("/sendMailNewUser")
+def sendMailNewUser():
+    return ""
+
+
+# ----------------------Profile Region
 
 
 # ----------------------Profile Region

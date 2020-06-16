@@ -1,10 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link href="/static/css/navBar.css" rel="stylesheet">
-</head>
-<body>
-<div class="area"></div>
+<link href="/static/css/navBar.css" rel="stylesheet">
+
 <nav class="main-menu">
     <ul>
         <li class="has-subnav">
@@ -15,6 +10,14 @@
                         </span>
             </a>
 
+        </li>
+        <li>
+            <a href="{{ url_for('users') }}">
+                <i class="fa fa-bar-chart-o fa-2x"></i>
+                <span class="nav-text">
+                                    Users
+                                </span>
+            </a>
         </li>
         <li>
             <a href="{{ url_for('analyzer') }}">
@@ -45,14 +48,6 @@
         </li>
         <!--        <li>-->
         <!--            <a href="#">-->
-        <!--                <i class="fa fa-bar-chart-o fa-2x"></i>-->
-        <!--                <span class="nav-text">-->
-        <!--                            Graphs and Statistics-->
-        <!--                        </span>-->
-        <!--            </a>-->
-        <!--        </li>-->
-        <!--        <li>-->
-        <!--            <a href="#">-->
         <!--                <i class="fa fa-info fa-2x"></i>-->
         <!--                <span class="nav-text">-->
         <!--                            Documentation-->
@@ -72,5 +67,3 @@
         </li>
     </ul>
 </nav>
-</body>
-</html>

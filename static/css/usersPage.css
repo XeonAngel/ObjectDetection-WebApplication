@@ -1,0 +1,21 @@
+body{
+    margin-top: 5vh;
+}
+
+.list-group-item{
+    margin-top: 2vh;
+    border-radius:15px;
+}
+
+.list-group-item:first-child, .list-group-item:last-child{
+    border-radius:15px;
+}
+
+.totalImagesScanned, .name{
+    margin-left: 40vh;
+}
+
+.btn-xs{
+    font-size: 16px;
+    padding: 0px;
+}
