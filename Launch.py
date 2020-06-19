@@ -1,12 +1,14 @@
 import datetime
-from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory
+from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'TOCHANGE'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database\\database.sqlite3'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app = Flask(__name__)  # TODO: Modificat Secretkey To ceva gen b'_5#y2L"F4Q8z\n\xec]/'
+app.config.from_pyfile('config.cfg')
 db = SQLAlchemy(app)
+mail = Mail(app)
+ulrSerializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
 # ----------------------Models Region
@@ -254,7 +256,8 @@ def updateHistoryClasses():
 @app.route("/users")
 def users():
     # TODO: Toate functiile ce tin de admin sa verifica daca este un admin setat
-    userList = db.session.query(Users.username, Users.email, Users.lastTimeSeen, Users.TotalImagesScanned,
+    # TODO: De setat titlu la fiecare pagina
+    userList = db.session.query(Users.id, Users.username, Users.email, Users.lastTimeSeen, Users.TotalImagesScanned,
                                 Classifiers.name) \
         .outerjoin(History, History.userId == Users.id) \
         .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
@@ -264,9 +267,34 @@ def users():
 
     return render_template("usersPage.html", userList=userList)
 
-@app.route("/sendMailNewUser")
-def sendMailNewUser():
-    return ""
+
+@app.route("/usersDelete/<userId>")
+def usersDelete(userId):
+    return
+
+
+@app.route("/usersInsert", methods=['POST'])
+def usersInsert():
+    email = request.form['email']
+    token = ulrSerializer.dumps(email)
+    message = Message('Create new account', sender='object.selector@gmail.com', recipients=[email])
+    link = url_for('createNewUser', token=token, _external=True)
+    message.body = 'Link to create new account is: {}\r\nThis link will expire in 24 hours.'.format(link)
+    mail.send(message)
+
+    flash("Invitation mail was send successfully")
+
+    return redirect(url_for('users'))
+
+@app.route("/createNewUser/<token>")
+def createNewUser(token):
+    try:
+        email = ulrSerializer.loads(token, max_age=86400)
+    except SignatureExpired:
+        return '<h1>The link has expired</h1>'
+
+    
+    return redirect(url_for('users'))# TODO: Redirect to login
 
 
 # ----------------------Profile Region
