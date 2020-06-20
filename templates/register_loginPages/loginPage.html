@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block styles %}{% endblock %}
+{% block title %} Login {% endblock %}
+
+{% block body %}
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-danger alert-dismissable" role="alert">
+    <button aria-label="close" class="close" data-dismiss="alert" type="button">
+        <span aria-hidden="true">x</span>
+    </button>
+    {{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<form action="/login" method="POST">
+    {{ loginForm.hidden_tag() }}
+    {{ wtf.form_field(loginForm.username) }}
+    {{ wtf.form_field(loginForm.password) }}
+    {{ wtf.form_field(loginForm.remember) }}
+    {{ wtf.form_field(loginForm.submit) }}
+</form>
+
+<form action="/resetPassword" method="POST">
+    {{ newPasswordForm.hidden_tag() }}
+    {{ wtf.form_field(newPasswordForm.email) }}
+    {{ wtf.form_field(newPasswordForm.submit) }}
+</form>
+
+{% endblock %}
+
+{% block scripts %} {% endblock %}

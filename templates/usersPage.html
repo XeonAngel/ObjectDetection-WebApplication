@@ -48,11 +48,17 @@
                     <tr>
                         <td>{{user.username}}</td>
                         <td>{{user.email}}</td>
-                        <td>{{user.lastTimeSeen}}</td>
+                        <td>
+                            {% if user.lastTimeSeen is not none %}
+                            {{user.lastTimeSeen}}
+                            {% else %}
+                            Never
+                            {% endif %}
+                        </td>
                         <td>{{user.TotalImagesScanned}}</td>
                         <td>{{user.name}}</td>
                         <td>
-                            <a class="btn btn-danger btn-xs" href="/delete/{{user.id}}"
+                            <a class="btn btn-danger btn-xs" href="/usersDelete/{{user.id}}"
                                onclick="return confirm('Are You Sure To Delete ?')">Delete</a>
                         </td>
                     </tr>
@@ -96,8 +102,6 @@
 <script crossorigin="anonymous"
         integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
         src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"
-        type="text/javascript"></script>
 <!--<script src="../static/javaScript/historyPage.js"></script>-->
 
 </body>

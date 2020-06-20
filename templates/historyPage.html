@@ -11,7 +11,7 @@
 </head>
 
 <body>
-{% if isAdminOnPage %}
+{% if current_user.isAdmin %}
 {% include "navBars/adminNavBar.html" %}
 {% else %}
 {% include "navBars/userNavBar.html" %}

@@ -1,13 +1,29 @@
 import datetime
+
 from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash
+
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+
 from flask_sqlalchemy import SQLAlchemy
+
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
-app = Flask(__name__)  # TODO: Modificat Secretkey To ceva gen b'_5#y2L"F4Q8z\n\xec]/'
+from flask_bootstrap import Bootstrap
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms.fields.html5 import EmailField
+from wtforms.validators import InputRequired, Email, Length, EqualTo, ValidationError
+
+app = Flask(__name__)  # TODO: Modificat Secretkey To ceva gen b'_5#y2L"F4Q8z\n\xec]/' creat automat
 app.config.from_pyfile('config.cfg')
 db = SQLAlchemy(app)
 mail = Mail(app)
+Bootstrap(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 ulrSerializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
@@ -35,16 +51,16 @@ class Classes(db.Model):
         self.classifierId = classifierId
 
 
-class Users(db.Model):
+class Users(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(200), nullable=False)
+    username = db.Column(db.String(100), nullable=False, unique=True, )
+    email = db.Column(db.String(200), nullable=False, unique=True, )
     password = db.Column(db.String(1000), nullable=False)
     isAdmin = db.Column(db.Boolean, nullable=False)
     lastTimeSeen = db.Column(db.DateTime, nullable=True)
     TotalImagesScanned = db.Column(db.Integer, nullable=False)
 
-    history = db.relationship('History', backref='user')
+    history = db.relationship('History', backref='user')  # TODO: Astea ar trebui sa fie lazy='dynamic'
 
     def __init__(self, username, email, password, isAdmin, TotalImagesScanned):
         self.username = username
@@ -84,7 +100,49 @@ class HistoryClasses(db.Model):
         self.numberOfClasses = numberOfClasses
 
 
-# ----------------------Models Region
+# ----------------------Forms Region
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[InputRequired(), Length(min=8, max=50)])
+    password = PasswordField('Password', validators=[InputRequired(), Length(min=10, max=100)])
+    # TODO de pus ConfirmPassword
+    submit = SubmitField('Register')
+
+    def validate_password(self, field):
+        password = field.data
+        if not (any(x.isupper() for x in password) and any(x.islower() for x in password)
+                and any(x.isdigit() for x in password) and any(not c.isalnum() for c in password)):
+            raise ValidationError(
+                'Password must contain at least 1 uppercase character, at least 1 lowercase character, at least 1 '
+                'digit and at least 1 special character.')
+
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[InputRequired(), Length(min=8, max=50)])
+    password = PasswordField('Password', validators=[InputRequired(), Length(min=10, max=100)])
+    remember = BooleanField('Remember me')
+    submit = SubmitField('Login')
+
+
+class ResetPasswordForm(FlaskForm):
+    email = EmailField('Email', validators=[InputRequired(), Email()])
+    submit = SubmitField('New password')
+
+
+class NewPasswordForm(FlaskForm):
+    newPassword = PasswordField('New Password', validators=[InputRequired(), Length(min=10, max=100)])
+    confirmPassword = PasswordField('Repeat Password', validators=[InputRequired(), Length(min=10, max=100),
+                                                                   EqualTo('confirmPassword',
+                                                                           message='Passwords must match')])
+    submit = SubmitField('Reset Password')
+
+    def validate_newPassword(self, field):
+        password = field.data
+        if not (any(x.isupper() for x in password) and any(x.islower() for x in password)
+                and any(x.isdigit() for x in password) and any(not c.isalnum() for c in password)):
+            raise ValidationError(
+                'Password must contain at least 1 uppercase character, at least 1 lowercase character, at least 1 '
+                'digit and at least 1 special character.')
+
 
 # ----------------------Temp Region
 # db.drop_all()
@@ -93,13 +151,20 @@ class HistoryClasses(db.Model):
 isAdminSet = True
 
 
-# ----------------------Temp Region
+# ----------------------Start Region
+@login_manager.user_loader
+def load_user(user_id):
+    return Users.query.get(int(user_id))
 
 
 @app.route("/")
 def home():
-    # return render_template("login.html")
-    return redirect(url_for("users"))
+    if current_user.is_authenticated:
+        if current_user.isAdmin:
+            return redirect(url_for('classifiers'))
+        else:
+            return redirect(url_for('analyzer'))
+    return redirect(url_for("login"))
 
 
 # ----------------------Analyzer Region
@@ -108,15 +173,13 @@ def analyzer():
     return render_template("analyzerPage.html", isAdminOnPage=isAdminSet)
 
 
-# ----------------------Analyzer Region
-
-
 # ----------------------Classifiers Region
 @app.route("/classifiers")
+@login_required
 def classifiers():
-    if isAdminSet:
+    if isAdminSet:  # TODO session isAdmin
         return render_template("adminClassifiersPage.html")
-    return render_template("userClassifiersPage.html")
+    return render_template("analyzerPage.html")
 
 
 @app.route("/userclassifierslist/<classToFind>")
@@ -145,9 +208,6 @@ def classesforclassifier(classifier):
             .filter(Classifiers.name.contains(classifier)) \
             .filter(Classifiers.name is not None).all()
     return render_template("iframes/userClassesListIframe.html", classList=classList)
-
-
-# ----------------------Classifiers Region
 
 
 # ----------------------History Region
@@ -249,14 +309,15 @@ def updateHistoryClasses():
                            firstFiveClassList=firstFiveClassList)
 
 
-# ----------------------History Region
-
-
-# ----------------------Profile Region
+# ----------------------Users Region
 @app.route("/users")
+@login_required
 def users():
     # TODO: Toate functiile ce tin de admin sa verifica daca este un admin setat
     # TODO: De setat titlu la fiecare pagina
+    if not current_user.isAdmin:
+        return "<h1>Not authorized</h1>"
+
     userList = db.session.query(Users.id, Users.username, Users.email, Users.lastTimeSeen, Users.TotalImagesScanned,
                                 Classifiers.name) \
         .outerjoin(History, History.userId == Users.id) \
@@ -268,13 +329,24 @@ def users():
     return render_template("usersPage.html", userList=userList)
 
 
-@app.route("/usersDelete/<userId>")
+@app.route("/usersDelete/<userId>", methods=['GET'])
+@login_required
 def usersDelete(userId):
-    return
+    if not current_user.isAdmin:
+        return "<h1>Not authorized</h1>"
+
+    user = Users.query.get(userId)
+    db.session.delete(user)
+    db.session.commit()
+    return redirect(url_for('users'))
 
 
 @app.route("/usersInsert", methods=['POST'])
+@login_required
 def usersInsert():
+    if not current_user.isAdmin:
+        return "<h1>Not authorized</h1>"
+
     email = request.form['email']
     token = ulrSerializer.dumps(email)
     message = Message('Create new account', sender='object.selector@gmail.com', recipients=[email])
@@ -286,18 +358,122 @@ def usersInsert():
 
     return redirect(url_for('users'))
 
-@app.route("/createNewUser/<token>")
+
+@app.route("/createNewUser/<token>", methods=['GET', 'POST'])
 def createNewUser(token):
-    try:
-        email = ulrSerializer.loads(token, max_age=86400)
-    except SignatureExpired:
-        return '<h1>The link has expired</h1>'
+    form = RegisterForm()
 
-    
-    return redirect(url_for('users'))# TODO: Redirect to login
+    if request.method == 'GET':
+        try:
+            email = ulrSerializer.loads(token, max_age=86400)
+        except SignatureExpired:
+            flash("The link has expired")
+            return render_template("register_loginPages/registerPage.html", form=form, token=token)
+        return render_template("register_loginPages/registerPage.html", form=form, token=token)
+
+    if form.validate_on_submit():
+        try:
+            email = ulrSerializer.loads(token, max_age=86400)
+        except SignatureExpired:
+            flash("The link has expired")
+            return render_template("register_loginPages/registerPage.html", form=form, token=token)
+        user = Users(form.username.data, email, generate_password_hash(form.password.data), 0, 0)
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    return render_template("register_loginPages/registerPage.html", form=form, token=token)
 
 
-# ----------------------Profile Region
+# ----------------------Login/Logout Region
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    loginForm = LoginForm()
+    newPasswordForm = ResetPasswordForm()
+
+    if request.method == 'GET':
+        return render_template("register_loginPages/loginPage.html",
+                               loginForm=loginForm,
+                               newPasswordForm=newPasswordForm)
+
+    if loginForm.validate_on_submit():
+        user = db.session.query(Users) \
+            .filter(Users.username == loginForm.username.data) \
+            .first()
+
+        if user:
+            if check_password_hash(user.password, loginForm.password.data):
+                login_user(user, remember=loginForm.remember.data)
+                if current_user.isAdmin:
+                    return redirect(url_for("classifiers"))
+                else:
+                    return redirect(url_for("analyzer"))
+            else:
+                flash("Wrong username or password")
+                return render_template("register_loginPages/loginPage.html",
+                                       loginForm=loginForm,
+                                       newPasswordForm=newPasswordForm)
+        else:
+            flash("Wrong username or password")
+            return render_template("register_loginPages/loginPage.html",
+                                   loginForm=loginForm,
+                                   newPasswordForm=newPasswordForm)
+
+    return render_template("register_loginPages/loginPage.html", loginForm=loginForm, newPasswordForm=newPasswordForm)
+
+
+@app.route("/resetPassword", methods=['POST'])
+def resetPassword():
+    newPasswordForm = ResetPasswordForm()
+    email = newPasswordForm.email.data
+    if newPasswordForm.validate_on_submit():
+        user = db.session.query(Users).filter(Users.email == email).first()
+        if user:
+            token = ulrSerializer.dumps(email)
+            message = Message('Reset Password', sender='object.selector@gmail.com', recipients=[email])
+            link = url_for('newPassword', token=token, _external=True)
+            message.body = 'Reset your password at this link: {}\r\nThis link will expire in 1 hours.'.format(link)
+            mail.send(message)
+            flash("Check your mail inbox for password reset link.")
+            return redirect(url_for('login'))
+        flash("Email not found")
+        return redirect(url_for('login'))
+    return redirect(url_for('login'))
+
+
+@app.route("/resetPassword/<token>", methods=['GET', 'POST'])
+def newPassword(token):
+    newPasswordForm = NewPasswordForm()
+
+    if request.method == 'GET':
+        try:
+            email = ulrSerializer.loads(token, max_age=3600)
+        except SignatureExpired:
+            flash("The link has expired")
+            return render_template("register_loginPages/resetPasswordPage.html", newPasswordForm=newPasswordForm,
+                                   token=token)
+        return render_template("register_loginPages/resetPasswordPage.html", newPasswordForm=newPasswordForm,
+                               token=token)
+
+    if newPasswordForm.validate_on_submit():
+        try:
+            email = ulrSerializer.loads(token, max_age=3600)
+        except SignatureExpired:
+            flash("The link has expired")
+            return render_template("register_loginPages/resetPasswordPage.html", newPasswordForm=newPasswordForm,
+                                   token=token)
+        user = Users.query.filter_by(email=email).first()
+        user.password = generate_password_hash(newPasswordForm.newPassword.data)
+        db.session.commit()
+        flash("Password changed successfully")
+        return redirect(url_for('login'))
+    return render_template("register_loginPages/resetPasswordPage.html", newPasswordForm=newPasswordForm, token=token)
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 
 # ----------------------Profile Region
@@ -305,8 +481,6 @@ def createNewUser(token):
 def profile():
     return render_template("profilePage.html", isAdminOnPage=isAdminSet)
 
-
-# ----------------------Profile Region
 
 if __name__ == '__main__':
     app.run(threaded=True, debug=True)

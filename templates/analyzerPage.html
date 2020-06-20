@@ -9,7 +9,7 @@
 </head>
 
 <body>
-{% if isAdminOnPage %}
+{% if current_user.isAdmin %}
 {% include "navBars/adminNavBar.html" %}
 {% else %}
 {% include "navBars/userNavBar.html" %}
@@ -51,7 +51,8 @@
             <div class="classifier_dropdown">
                 <p>Select classifier</p>
                 <div class="dropdown">
-                    <button class="btn btn-primary dropdown-toggle absolutePos" data-toggle="dropdown" type="button">Default classifier
+                    <button class="btn btn-primary dropdown-toggle absolutePos" data-toggle="dropdown" type="button">
+                        Default classifier
                         <span class="caret"></span></button>
                     <ul class="dropdown-menu">
                         <li class="active"><a href="#">Default classifier</a></li>

@@ -4,7 +4,7 @@
 </head>
 
 <body>
-{% if isAdminOnPage %}
+{% if current_user.isAdmin %}
 {% extends "navBars/adminNavBar.html" %}
 {% else %}
 {% extends "navBars/userNavBar.html" %}
