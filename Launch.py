@@ -131,7 +131,7 @@ class ResetPasswordForm(FlaskForm):
 class NewPasswordForm(FlaskForm):
     newPassword = PasswordField('New Password', validators=[InputRequired(), Length(min=10, max=100)])
     confirmPassword = PasswordField('Repeat Password', validators=[InputRequired(), Length(min=10, max=100),
-                                                                   EqualTo('confirmPassword',
+                                                                   EqualTo('newPassword',
                                                                            message='Passwords must match')])
     submit = SubmitField('Reset Password')
 
@@ -144,11 +144,27 @@ class NewPasswordForm(FlaskForm):
                 'digit and at least 1 special character.')
 
 
+class ProfileForm(FlaskForm):
+    username = StringField('Username', validators=[InputRequired(), Length(min=8, max=50)])
+    email = EmailField('Email', validators=[InputRequired(), Email()])
+    password = PasswordField('Password')
+    confirmPassword = PasswordField('Repeat Password',
+                                    validators=[EqualTo('password', message='Passwords must match')])
+    submit = SubmitField('Save Changes')
+
+    def validate_password(self, field):
+        password = field.data
+        if password != "":
+            if not (any(x.isupper() for x in password) and any(x.islower() for x in password)
+                    and any(x.isdigit() for x in password) and any(not c.isalnum() for c in password)):
+                raise ValidationError(
+                    'Password must contain at least 1 uppercase character, at least 1 lowercase character, at least 1 '
+                    'digit and at least 1 special character.')
+
+
 # ----------------------Temp Region
 # db.drop_all()
 # db.create_all()
-
-isAdminSet = True
 
 
 # ----------------------Start Region
@@ -169,20 +185,22 @@ def home():
 
 # ----------------------Analyzer Region
 @app.route("/analyzer")
+@login_required
 def analyzer():
-    return render_template("analyzerPage.html", isAdminOnPage=isAdminSet)
+    return render_template("analyzerPage.html", isAdminOnPage=current_user.isAdmin)
 
 
 # ----------------------Classifiers Region
 @app.route("/classifiers")
 @login_required
 def classifiers():
-    if isAdminSet:  # TODO session isAdmin
+    if current_user.isAdmin:
         return render_template("adminClassifiersPage.html")
-    return render_template("analyzerPage.html")
+    return render_template("userClassifiersPage.html")
 
 
 @app.route("/userclassifierslist/<classToFind>")
+@login_required
 def userclassifierslist(classToFind):
     # TODO: Move Classifers to another iframe just add mode than one page can see and test it
     # TODO: Alphabetic Sort
@@ -199,6 +217,7 @@ def userclassifierslist(classToFind):
 
 
 @app.route("/classesforclassifier/<classifier>")
+@login_required
 def classesforclassifier(classifier):
     if classifier == "none":
         return render_template("iframes/userClassesListIframe.html", classList="")
@@ -212,6 +231,7 @@ def classesforclassifier(classifier):
 
 # ----------------------History Region
 @app.route("/history", methods=['GET', 'POST'])
+@login_required
 def history():
     classifierList = db.session.query(Classifiers.name).all()
     classList = db.session.query(Classes.name).distinct(Classes.name).all()
@@ -220,15 +240,12 @@ def history():
         if len(classList) != 0:
             firstFiveClassList.append(classList.pop(0))
 
-    usernameId = 1  # TODO Set Session Username
-    username = 'Admin'  # TODO Set Session Username
-
     if request.method == 'POST':
         classifierFilterName = request.form.get("classifierName")
         classFilterList = request.form.getlist("classCheckBox")
         takenDateString = request.form.get("date")
 
-        filterList = [History.userId == usernameId]
+        filterList = [History.userId == current_user.id]
 
         if classifierFilterName != 'All Classifiers':
             filterList.append(Classifiers.name == classifierFilterName)
@@ -256,30 +273,34 @@ def history():
                 .group_by(History.id) \
                 .all()
 
-        return render_template("historyPage.html", isAdminOnPage=isAdminSet,
+        return render_template("historyPage.html", isAdminOnPage=current_user.isAdmin,
                                classifierList=classifierList,
                                classList=classList,
                                firstFiveClassList=firstFiveClassList,
                                imagePaths=imagePaths,
                                searchResultNumber=len(imagePaths),
-                               givenUsername=username)
+                               givenUsername=current_user.username)
     else:
-        return render_template("historyPage.html", isAdminOnPage=isAdminSet,
+        return render_template("historyPage.html", isAdminOnPage=current_user.isAdmin,
                                classifierList=classifierList,
                                classList=classList,
                                firstFiveClassList=firstFiveClassList,
                                imagePaths="",
                                searchResultNumber=-1,
-                               givenUsername=username)
+                               givenUsername=current_user.username)
 
 
 @app.route("/historyImage/<username>/<filename>")
+@login_required
 def giveImageFromDirectory(username, filename):
+    if current_user.username != username:
+        return "<h1>Not authorized</h1>"
     imageUrl = username + "/" + filename
     return send_from_directory("MachineLearning/output/", imageUrl)
 
 
 @app.route("/historyImageClasses", methods=['POST'])
+@login_required
 def giveClassesForImage():
     classList = db.session.query(HistoryClasses.numberOfClasses, Classes.name) \
         .outerjoin(Classes, Classes.id == HistoryClasses.classId) \
@@ -289,6 +310,7 @@ def giveClassesForImage():
 
 
 @app.route("/updateHistoryClasses", methods=['POST'])
+@login_required
 def updateHistoryClasses():
     filterList = []
     if request.form['classifier'] != 'All Classifiers':
@@ -403,6 +425,8 @@ def login():
         if user:
             if check_password_hash(user.password, loginForm.password.data):
                 login_user(user, remember=loginForm.remember.data)
+                user.lastTimeSeen = datetime.datetime.now()
+                db.session.commit()
                 if current_user.isAdmin:
                     return redirect(url_for("classifiers"))
                 else:
@@ -477,9 +501,34 @@ def logout():
 
 
 # ----------------------Profile Region
-@app.route("/profile")
+@app.route("/profile", methods=['GET', 'POST'])
+@login_required
 def profile():
-    return render_template("profilePage.html", isAdminOnPage=isAdminSet)
+    profileForm = ProfileForm()
+
+    if request.method == 'GET':
+        user = Users.query.filter_by(id=current_user.id).first()
+        profileForm.username.data = user.username
+        profileForm.email.data = user.email
+        return render_template("profilePage/profilePage.html", isAdminOnPage=current_user.isAdmin,
+                               profileForm=profileForm)
+
+    if profileForm.validate_on_submit():
+        user = Users.query.filter_by(id=current_user.id).first()
+        user.username = profileForm.username.data
+        user.email = profileForm.email.data
+        if profileForm.password.data:
+            user.password = generate_password_hash(profileForm.password.data)
+
+        db.session.commit()
+        flash("Profile saved!")
+        profileForm = ProfileForm()
+        profileForm.username.data = user.username
+        profileForm.email.data = user.email
+        return render_template("profilePage/profilePage.html", isAdminOnPage=current_user.isAdmin,
+                               profileForm=profileForm)
+    return render_template("profilePage/profilePage.html", isAdminOnPage=current_user.isAdmin,
+                           profileForm=profileForm)
 
 
 if __name__ == '__main__':
