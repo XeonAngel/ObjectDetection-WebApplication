@@ -13,23 +13,12 @@ YOLOV3_LAYER_LIST = [
     'yolo_output_2',
 ]
 
-YOLOV3_TINY_LAYER_LIST = [
-    'yolo_darknet',
-    'yolo_conv_0',
-    'yolo_output_0',
-    'yolo_conv_1',
-    'yolo_output_1',
-]
 
-
-def load_darknet_weights(model, weights_file, tiny=False):
+def load_darknet_weights(model, weights_file):
     wf = open(weights_file, 'rb')
     major, minor, revision, seen, _ = np.fromfile(wf, dtype=np.int32, count=5)
 
-    if tiny:
-        layers = YOLOV3_TINY_LAYER_LIST
-    else:
-        layers = YOLOV3_LAYER_LIST
+    layers = YOLOV3_LAYER_LIST
 
     for layer_name in layers:
         sub_model = model.get_layer(layer_name)
@@ -46,7 +35,7 @@ def load_darknet_weights(model, weights_file, tiny=False):
 
             filters = layer.filters
             size = layer.kernel_size[0]
-            in_dim = layer.input_shape[-1]
+            in_dim = layer.get_input_shape_at(0)[-1]
 
             if batch_norm is None:
                 conv_bias = np.fromfile(wf, dtype=np.float32, count=filters)
@@ -93,9 +82,9 @@ def broadcast_iou(box_1, box_2):
                        tf.maximum(box_1[..., 1], box_2[..., 1]), 0)
     int_area = int_w * int_h
     box_1_area = (box_1[..., 2] - box_1[..., 0]) * \
-        (box_1[..., 3] - box_1[..., 1])
+                 (box_1[..., 3] - box_1[..., 1])
     box_2_area = (box_2[..., 2] - box_2[..., 0]) * \
-        (box_2[..., 3] - box_2[..., 1])
+                 (box_2[..., 3] - box_2[..., 1])
     return int_area / (box_1_area + box_2_area - int_area)
 
 
@@ -109,7 +98,7 @@ def draw_outputs(img, outputs, class_names):
         img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
         img = cv2.putText(img, '{} {:.4f}'.format(
             class_names[int(classes[i])], objectness[i]),
-            x1y1, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+                          x1y1, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
     return img
 
 

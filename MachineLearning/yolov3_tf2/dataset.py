@@ -69,7 +69,7 @@ def transform_targets(y_train, anchors, anchor_masks, size):
 
     return tuple(y_outs)
 
-#Used
+
 def transform_images(x_train, size):
     x_train = tf.image.resize(x_train, (size, size))
     x_train = x_train / 255
@@ -119,26 +119,26 @@ def parse_tfrecord(tfrecord, class_table, size):
 
 
 def load_tfrecord_dataset(file_pattern, class_file, size=416):
-
+    LINE_NUMBER = -1  # TODO: use tf.lookup.TextFileIndex.LINE_NUMBER
     class_table = tf.lookup.StaticHashTable(tf.lookup.TextFileInitializer(
-        class_file, tf.string, 0, tf.int64, tf.lookup.TextFileIndex.LINE_NUMBER, delimiter="\n"), -1)
+        class_file, tf.string, 0, tf.int64, LINE_NUMBER, delimiter="\n"), -1)
 
     files = tf.data.Dataset.list_files(file_pattern)
     dataset = files.flat_map(tf.data.TFRecordDataset)
     return dataset.map(lambda x: parse_tfrecord(x, class_table, size))
-
-
-def load_fake_dataset():
-    x_train = tf.image.decode_jpeg(
-        open('./data/girl.png', 'rb').read(), channels=3)
-    x_train = tf.expand_dims(x_train, axis=0)
-
-    labels = [
-        [0.18494931, 0.03049111, 0.9435849,  0.96302897, 0],
-        [0.01586703, 0.35938117, 0.17582396, 0.6069674, 56],
-        [0.09158827, 0.48252046, 0.26967454, 0.6403017, 67]
-    ] + [[0, 0, 0, 0, 0]] * 5
-    y_train = tf.convert_to_tensor(labels, tf.float32)
-    y_train = tf.expand_dims(y_train, axis=0)
-
-    return tf.data.Dataset.from_tensor_slices((x_train, y_train))
+#TODO: DELETE
+#
+# def load_fake_dataset():
+#     x_train = tf.image.decode_jpeg(
+#         open('./data/girl.png', 'rb').read(), channels=3)
+#     x_train = tf.expand_dims(x_train, axis=0)
+#
+#     labels = [
+#         [0.18494931, 0.03049111, 0.9435849,  0.96302897, 0],
+#         [0.01586703, 0.35938117, 0.17582396, 0.6069674, 56],
+#         [0.09158827, 0.48252046, 0.26967454, 0.6403017, 67]
+#     ] + [[0, 0, 0, 0, 0]] * 5
+#     y_train = tf.convert_to_tensor(labels, tf.float32)
+#     y_train = tf.expand_dims(y_train, axis=0)
+#
+#     return tf.data.Dataset.from_tensor_slices((x_train, y_train))

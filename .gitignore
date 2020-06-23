@@ -4,14 +4,11 @@
 *.tar
 *.tfrecord
 *.pyc
-/MachineLearning/checkpoints/
-!/MachineLearning/checkpoints/.gitkeep
-/MachineLearning/serving/*
-/MachineLearning/logs/
-/MachineLearning/output/
-!/MachineLearning/output/.gitkeep
-/MachineLearning/data/voc2012_raw/
-/MachineLearning/data/yolov3.weights
+
+/MachineLearning/classifiers/*
+/MachineLearning/userData/*
+/MachineLearning/transferTrainingStart/*
+!/MachineLearning/transferTrainingStart/InitialWeightsDownload.txt
 
 # Created by https://www.gitignore.io/api/python,pycharm+all
 # Edit at https://www.gitignore.io/?templates=python,pycharm+all

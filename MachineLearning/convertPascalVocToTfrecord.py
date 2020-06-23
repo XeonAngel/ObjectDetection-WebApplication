@@ -1,24 +1,19 @@
-import time
-import os
 import hashlib
+import os
+import shutil
 
+import lxml.etree
+import tensorflow as tf
+import tqdm
 from absl import app, flags, logging
 from absl.flags import FLAGS
-import tensorflow as tf
-import lxml.etree
-import tqdm
 
-flags.DEFINE_string('data_dir', './data/voc2012_raw/VOCdevkit/VOC2012/',
-                    'path to raw PASCAL VOC dataset')
-flags.DEFINE_enum('split', 'train', [
-                  'train', 'val'], 'specify train or val spit')
-flags.DEFINE_string('output_file', './data/voc2012_train.tfrecord', 'outpot dataset')
-flags.DEFINE_string('classes', './data/voc2012.names', 'classes file')
+flags.DEFINE_string('classifier', '', 'classifier name')
 
 
-def build_example(annotation, class_map):
+def build_example(annotation, class_map, dataDirectory):
     img_path = os.path.join(
-        FLAGS.data_dir, 'JPEGImages', annotation['filename'])
+        dataDirectory, 'JPEGImages', annotation['filename'])
     img_raw = open(img_path, 'rb').read()
     key = hashlib.sha256(img_raw).hexdigest()
 
@@ -87,24 +82,46 @@ def parse_xml(xml):
 
 
 def main(_argv):
+    dataDirectory = './classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '-PascalVOC-export'
+    labelMapPath = dataDirectory + '/pascal_label_map.pbtxt'
+    classesNamePath = './classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '.names'
+    classList = ''
+    with open(labelMapPath) as f:
+        for line in f:
+            try:
+                result = line.split('\'')[1]
+            except:
+                continue
+            classList = classList + result + '\n'
+
+    f = open(classesNamePath, "w")
+    f.write(classList)
+    f.close()
+
     class_map = {name: idx for idx, name in enumerate(
-        open(FLAGS.classes).read().splitlines())}
+        open(classesNamePath).read().splitlines())}
     logging.info("Class mapping loaded: %s", class_map)
 
-    writer = tf.io.TFRecordWriter(FLAGS.output_file)
-    image_list = open(os.path.join(
-        FLAGS.data_dir, 'ImageSets', 'Main', 'aeroplane_%s.txt' % FLAGS.split)).read().splitlines()
-    logging.info("Image list loaded: %d", len(image_list))
-    for image in tqdm.tqdm(image_list):
-        name, _ = image.split()
-        annotation_xml = os.path.join(
-            FLAGS.data_dir, 'Annotations', name + '.xml')
-        annotation_xml = lxml.etree.fromstring(open(annotation_xml).read())
-        annotation = parse_xml(annotation_xml)['annotation']
-        tf_example = build_example(annotation, class_map)
-        writer.write(tf_example.SerializeToString())
-    writer.close()
-    logging.info("Done")
+    splitList = ['train', 'val']
+    for split in splitList:
+        writer = tf.io.TFRecordWriter(
+            './classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '_' + split + '.tfrecord')
+        imagesPath = os.path.join(dataDirectory, 'ImageSets', 'Main', next(iter(class_map)) + '_%s.txt' % split)
+        image_list = open(imagesPath).read().splitlines()
+        logging.info("Image list loaded: %d", len(image_list))
+        for image in tqdm.tqdm(image_list):
+            name, _ = image.split('.')
+            annotation_xml = os.path.join(
+                dataDirectory, 'Annotations', name + '.xml')
+            annotation_xml = lxml.etree.fromstring(open(annotation_xml).read())
+            annotation = parse_xml(annotation_xml)['annotation']
+            tf_example = build_example(annotation, class_map, dataDirectory)
+            writer.write(tf_example.SerializeToString())
+        writer.close()
+        logging.info("Done")
+
+    shutil.rmtree(dataDirectory)
+    logging.info("Data directory deleted")
 
 
 if __name__ == '__main__':

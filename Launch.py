@@ -1,4 +1,5 @@
 import datetime
+import os
 
 from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash
 
@@ -165,6 +166,20 @@ class ProfileForm(FlaskForm):
 # ----------------------Temp Region
 # db.drop_all()
 # db.create_all()
+
+tempUsers = db.session.query(Users.username).all()
+for user in tempUsers:
+    userPath = os.path.join('.', 'MachineLearning', 'userData', user.username)
+    if not os.path.exists(os.path.join(userPath, 'toScan')):
+        os.makedirs(os.path.join(userPath, 'toScan'))
+    if not os.path.exists(os.path.join(userPath, 'output')):
+        os.makedirs(os.path.join(userPath, 'output'))
+
+tempClassifiers = db.session.query(Classifiers.name).all()
+for classifier in tempClassifiers:
+    classifierPath = os.path.join('.', 'MachineLearning', 'classifiers', classifier.name)
+    if not os.path.exists(classifierPath):
+        os.makedirs(classifierPath)
 
 
 # ----------------------Start Region
