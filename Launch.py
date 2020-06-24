@@ -1,7 +1,8 @@
 import datetime
 import os
+import uuid
 
-from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash
+from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash, make_response
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -13,6 +14,7 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
+from werkzeug.utils import secure_filename
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import InputRequired, Email, Length, EqualTo, ValidationError
@@ -201,10 +203,23 @@ def home():
 
 
 # ----------------------Analyzer Region
-@app.route("/analyzer")
+@app.route("/analyzer", methods=['GET', 'POST'])
 @login_required
 def analyzer():
-    return render_template("analyzerPage.html", isAdminOnPage=current_user.isAdmin)
+    if request.method == "POST":
+        file = request.files["file"]
+        filename = uuid.uuid4()
+        fileType = '.' + file.filename.split('.')[-1]
+        path = os.path.join('MachineLearning', 'userData', current_user.username, 'toScan')
+        file.save(os.path.join(path, str(filename) + fileType))
+
+        res = make_response(jsonify({"message": "File uploaded"}), 200)
+        return res
+
+    classifierList = db.session.query(Classifiers.name).all()
+
+    return render_template("analyzerPage/analyzerPage.html", isAdminOnPage=current_user.isAdmin,
+                           classifierList=classifierList)
 
 
 # ----------------------Classifiers Region
