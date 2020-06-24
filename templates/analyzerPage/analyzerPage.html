@@ -56,9 +56,9 @@
                         {{classifierList[0].name}}
                         <span class="caret"></span></button>
                     <ul class="dropdown-menu">
-                        <li class="active"><a href="#">{{classifierList[0].name}}</a></li>
+                        <li class="dropdownItem active"><a href="#">{{classifierList[0].name}}</a></li>
                         {% for classifier in classifierList[1:]%}
-                        <li><a href="#">{{classifier.name}}</a></li>
+                        <li class="dropdownItem"><a href="#">{{classifier.name}}</a></li>
                         {% endfor%}
                     </ul>
                     <span class="fa fa-question-circle right-relative" onclick="window.location='/classifiers'"></span>

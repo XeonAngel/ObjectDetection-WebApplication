@@ -10,6 +10,13 @@ $(document).ready(function () {
             this.className += " active";
         });
     }
+
+    $(".dropdown-menu li a").click(function () {
+        $(".dropdown-toggle").text($(this).text());
+        $('.dropdownItem.active').removeClass('active')
+        $(this).parent().addClass('active')
+    });
+
 });
 
 
