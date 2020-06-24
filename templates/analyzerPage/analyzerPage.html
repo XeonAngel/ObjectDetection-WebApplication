@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block styles %}
+<link href="{{url_for('static', filename='css/analyzerPage.css')}}" rel="stylesheet">
+{% endblock %}
+{% block title %} Analyzer {% endblock %}
+
+{% block body %}
+{% if current_user.isAdmin %}
+{% include "navBars/adminNavBar.html" %}
+{% else %}
+{% include "navBars/userNavBar.html" %}
+{% endif %}
+
+<div class="container">
+    <div class="row">
+        <div class="button-group" id="button-groupID">
+            <button class="button left_button active">Upload data</button>
+            <button class="button right_button">Analyze</button>
+        </div>
+    </div>
+    <div class="row" id="uploadDataDiv">
+        <div class="upload_data" id="upload_data">
+            <div class="form-group mb-3">
+                <div class="custom-file">
+                    <input class="custom-file-input" id="file_input" name="file_input" oninput="input_filename();"
+                           type="file">
+                    <label class="custom-file-label" for="file_input" id="file_input_label">Select file</label>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="upload_btn" onclick="uploadData('{{url_for('analyzer')}}');">
+                Upload file
+            </button>
+
+            <center>
+                <div id="alert_wrapper"></div>
+            </center>
+
+            <div class="progress_bar invisible" id="progress_wrapper">
+                <p>Upload progress</p>
+                <div class="progress">
+                    <div aria-valuemax="100" aria-valuemin="0" aria-valuenow="25" class="progress-bar"
+                         id='uploadProgressBar' role="progressbar" style="width: 0%;">0%
+                    </div>
+                </div>
+            </div>
+
+            <button class="button btn btn-secondary invisible" id="cancel_btn" type="button">Cancel upload</button>
+        </div>
+    </div>
+    <div class="row" id="analyzeDiv">
+        <div class="analyze_data" id="analyze_data">
+            <div class="classifier_dropdown">
+                <p>Select classifier</p>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle absolutePos" data-toggle="dropdown" type="button">
+                        {{classifierList[0].name}}
+                        <span class="caret"></span></button>
+                    <ul class="dropdown-menu">
+                        <li class="active"><a href="#">{{classifierList[0].name}}</a></li>
+                        {% for classifier in classifierList[1:]%}
+                        <li><a href="#">{{classifier.name}}</a></li>
+                        {% endfor%}
+                    </ul>
+                    <span class="fa fa-question-circle right-relative" onclick="window.location='/classifiers'"></span>
+                </div>
+            </div>
+            <button class="button">Analyze</button>
+            <div class="progress_bar">
+                <p>Analyze progress</p>
+                <div class="progress">
+                    <div aria-valuemax="100" aria-valuemin="0" aria-valuenow="25" class="progress-bar"
+                         role="progressbar" style="width: 75%;">75%
+                    </div>
+                </div>
+            </div>
+            <button class="button">Stop analyzing</button>
+            <center>
+                <div class="alert alert-success" role="alert">
+                    Analyze success!
+                </div>
+                <div class="alert alert-danger" role="alert">
+                    Analyze failed!
+                </div>
+            </center>
+            <button class="button result">Result</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{url_for('static', filename='javaScript/analyzePage.js')}}"></script>
+{% endblock %}
