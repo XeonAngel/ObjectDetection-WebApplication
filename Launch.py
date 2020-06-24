@@ -17,6 +17,8 @@ from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import InputRequired, Email, Length, EqualTo, ValidationError
 
+# from MachineLearning.detect import main
+
 app = Flask(__name__)  # TODO: Modificat Secretkey To ceva gen b'_5#y2L"F4Q8z\n\xec]/' creat automat
 app.config.from_pyfile('config.cfg')
 db = SQLAlchemy(app)
