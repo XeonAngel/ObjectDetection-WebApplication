@@ -1,5 +1,6 @@
 import datetime
 import os
+import subprocess
 import uuid
 
 from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash, make_response
@@ -14,12 +15,10 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
-from werkzeug.utils import secure_filename
+
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import InputRequired, Email, Length, EqualTo, ValidationError
-
-# from MachineLearning.detect import main
 
 app = Flask(__name__)  # TODO: Modificat Secretkey To ceva gen b'_5#y2L"F4Q8z\n\xec]/' creat automat
 app.config.from_pyfile('config.cfg')
@@ -64,6 +63,10 @@ class Users(UserMixin, db.Model):
     isAdmin = db.Column(db.Boolean, nullable=False)
     lastTimeSeen = db.Column(db.DateTime, nullable=True)
     TotalImagesScanned = db.Column(db.Integer, nullable=False)
+    detectPid = db.Column(db.Integer, nullable=False)
+    scanProgress = db.Column(db.Integer, nullable=False)
+    trainPid = db.Column(db.Integer, nullable=False)
+    trainProgress = db.Column(db.Integer, nullable=False)
 
     history = db.relationship('History', backref='user')  # TODO: Astea ar trebui sa fie lazy='dynamic'
 
@@ -206,12 +209,28 @@ def home():
 @app.route("/analyzer", methods=['GET', 'POST'])
 @login_required
 def analyzer():
+    updatedUser = db.session.query(Users).filter(Users.id == current_user.id).first()
+
     if request.method == "POST":
         file = request.files["file"]
         filename = uuid.uuid4()
         fileType = '.' + file.filename.split('.')[-1]
         path = os.path.join('MachineLearning', 'userData', current_user.username, 'toScan')
         file.save(os.path.join(path, str(filename) + fileType))
+
+        # routePath = 'http://127.0.0.1:5000' + url_for("analyzerProgressCount")
+        # processPath = 'python ./MachineLearning/detect.py --classifier General --username Administrator --serverPath {}' \
+        #     .format(routePath)
+        # proc = subprocess.Popen(processPath)
+        # updatedUser.detectPid = proc.pid
+        # updatedUser.scanProgress = 0
+        # userHistory = db.session.query(History) \
+        #     .filter(History.userId == current_user.id) \
+        #     .filter(History.isLastScan == 1) \
+        #     .all()
+        # for hist in userHistory:
+        #     hist.isLastScan = 0
+        # db.session.commit()
 
         res = make_response(jsonify({"message": "File uploaded"}), 200)
         return res
@@ -220,6 +239,51 @@ def analyzer():
 
     return render_template("analyzerPage/analyzerPage.html", isAdminOnPage=current_user.isAdmin,
                            classifierList=classifierList)
+
+
+@app.route("/analyzerProgressCount", methods=['POST'])
+def analyzerProgressCount():
+    form = request.form
+
+    classifierName = form['classifier']
+    classifierId = db.session.query(Classifiers.id).filter(Classifiers.name == classifierName).first()
+    username = form['username']
+    userCurrent = db.session.query(Users).filter(Users.username == username).first()
+
+    if 'imageProgress' in form:
+        imageProgress = form['imageProgress']
+        imageTotal = form['imageTotal']
+        imageName = form['imageName']
+        classesFoundList = form['classesFound'].split(',')
+        classesFoundDict = {}
+        for classFound in classesFoundList:
+            if classFound != '':
+                if classFound in classesFoundDict:
+                    classesFoundDict[classFound] += 1
+                else:
+                    classesFoundDict[classFound] = 1
+
+        userCurrent.scanProgress = (int(imageTotal) * 100) / int(imageProgress)
+        userHistory = History(imageName, datetime.date.today(), 1, classifierId.id, userCurrent.id)
+        db.session.add(userHistory)
+        db.session.commit()
+
+        for key, value in classesFoundDict.items():
+            classId = db.session.query(Classes.id).filter(Classes.name == key).first()
+            userHistoryClasses = HistoryClasses(userHistory.id, classId.id, value)
+            db.session.add(userHistoryClasses)
+            db.session.commit()
+
+        return make_response('Test worked!', 200)
+
+    imagesScanned = form['imagesScanned']
+
+    userCurrent.detectPid = -2
+    total = userCurrent.TotalImagesScanned + int(imagesScanned)
+    userCurrent.TotalImagesScanned = total
+    db.session.commit()
+
+    return make_response('Test worked!', 200)
 
 
 # ----------------------Classifiers Region
