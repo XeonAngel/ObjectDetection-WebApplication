@@ -212,33 +212,40 @@ def analyzer():
     updatedUser = db.session.query(Users).filter(Users.id == current_user.id).first()
 
     if request.method == "POST":
-        file = request.files["file"]
-        filename = uuid.uuid4()
-        fileType = '.' + file.filename.split('.')[-1]
-        path = os.path.join('MachineLearning', 'userData', current_user.username, 'toScan')
-        file.save(os.path.join(path, str(filename) + fileType))
+        data = request.data.decode("utf-8")
+        routePath = 'http://127.0.0.1:5000' + url_for("analyzerProgressCount")
+        processPath = 'python ./MachineLearning/detect.py --classifier {} --username {} --serverPath {}' \
+            .format(data, current_user.username, routePath)
+        proc = subprocess.Popen(processPath)
+        updatedUser.detectPid = proc.pid
+        updatedUser.scanProgress = 0
+        userHistory = db.session.query(History) \
+            .filter(History.userId == current_user.id) \
+            .filter(History.isLastScan == 1) \
+            .all()
+        for hist in userHistory:
+            hist.isLastScan = 0
+        db.session.commit()
 
-        # routePath = 'http://127.0.0.1:5000' + url_for("analyzerProgressCount")
-        # processPath = 'python ./MachineLearning/detect.py --classifier General --username Administrator --serverPath {}' \
-        #     .format(routePath)
-        # proc = subprocess.Popen(processPath)
-        # updatedUser.detectPid = proc.pid
-        # updatedUser.scanProgress = 0
-        # userHistory = db.session.query(History) \
-        #     .filter(History.userId == current_user.id) \
-        #     .filter(History.isLastScan == 1) \
-        #     .all()
-        # for hist in userHistory:
-        #     hist.isLastScan = 0
-        # db.session.commit()
-
-        res = make_response(jsonify({"message": "File uploaded"}), 200)
+        res = make_response(jsonify({"message": "Scan started"}), 200)
         return res
 
     classifierList = db.session.query(Classifiers.name).all()
 
     return render_template("analyzerPage/analyzerPage.html", isAdminOnPage=current_user.isAdmin,
                            classifierList=classifierList)
+
+
+@app.route("/uploadDataForAnalyzer", methods=['POST'])
+def uploadDataForAnalyzer():
+    file = request.files["file"]
+    filename = uuid.uuid4()
+    fileType = '.' + file.filename.split('.')[-1]
+    path = os.path.join('MachineLearning', 'userData', current_user.username, 'toScan')
+    file.save(os.path.join(path, str(filename) + fileType))
+
+    res = make_response(jsonify({"message": "File uploaded"}), 200)
+    return res
 
 
 @app.route("/analyzerProgressCount", methods=['POST'])
@@ -263,9 +270,11 @@ def analyzerProgressCount():
                 else:
                     classesFoundDict[classFound] = 1
 
-        userCurrent.scanProgress = (int(imageTotal) * 100) / int(imageProgress)
-        userHistory = History(imageName, datetime.date.today(), 1, classifierId.id, userCurrent.id)
-        db.session.add(userHistory)
+        if classesFoundDict:
+            userHistory = History(imageName, datetime.date.today(), 1, classifierId.id, userCurrent.id)
+            db.session.add(userHistory)
+
+        userCurrent.scanProgress = (int(imageProgress) * 100) / int(imageTotal)
         db.session.commit()
 
         for key, value in classesFoundDict.items():
@@ -391,8 +400,8 @@ def history():
 def giveImageFromDirectory(username, filename):
     if current_user.username != username:
         return "<h1>Not authorized</h1>"
-    imageUrl = username + "/" + filename
-    return send_from_directory("MachineLearning/output/", imageUrl)
+    imageUrl = os.path.join('.', 'MachineLearning', 'userData', username, 'output')
+    return send_from_directory(imageUrl, filename)
 
 
 @app.route("/historyImageClasses", methods=['POST'])

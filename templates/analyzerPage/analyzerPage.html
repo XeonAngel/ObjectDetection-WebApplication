@@ -27,15 +27,16 @@
                     <label class="custom-file-label" for="file_input" id="file_input_label">Select file</label>
                 </div>
             </div>
-            <button class="btn btn-primary" id="upload_btn" onclick="uploadData('{{url_for('analyzer')}}');">
+            <button class="btn btn-primary" id="upload_btn"
+                    onclick="uploadData('{{url_for('uploadDataForAnalyzer')}}');">
                 Upload file
             </button>
 
             <center>
-                <div id="alert_wrapper"></div>
+                <div id="uploadData_alert_wrapper"></div>
             </center>
 
-            <div class="progress_bar invisible" id="progress_wrapper">
+            <div class="progress_bar invisible" id="uploadData_progress_wrapper">
                 <p>Upload progress</p>
                 <div class="progress">
                     <div aria-valuemax="100" aria-valuemin="0" aria-valuenow="25" class="progress-bar"
@@ -44,7 +45,9 @@
                 </div>
             </div>
 
-            <button class="button btn btn-secondary invisible" id="cancel_btn" type="button">Cancel upload</button>
+            <button class="button btn btn-secondary invisible" id="uploadData_cancel_btn" type="button">
+                Cancel upload
+            </button>
         </div>
     </div>
     <div class="row" id="analyzeDiv">
@@ -52,7 +55,8 @@
             <div class="classifier_dropdown">
                 <p>Select classifier</p>
                 <div class="dropdown">
-                    <button class="btn btn-primary dropdown-toggle absolutePos" data-toggle="dropdown" type="button">
+                    <button class="btn btn-primary dropdown-toggle absolutePos" data-toggle="dropdown"
+                            id="dropdown_button" type="button">
                         {{classifierList[0].name}}
                         <span class="caret"></span></button>
                     <ul class="dropdown-menu">
@@ -64,25 +68,31 @@
                     <span class="fa fa-question-circle right-relative" onclick="window.location='/classifiers'"></span>
                 </div>
             </div>
-            <button class="button">Analyze</button>
-            <div class="progress_bar">
-                <p>Analyze progress</p>
-                <div class="progress">
-                    <div aria-valuemax="100" aria-valuemin="0" aria-valuenow="25" class="progress-bar"
-                         role="progressbar" style="width: 75%;">75%
+            <!--            <button class="button">Analyze</button>-->
+            <button class="btn btn-primary" id="analyze_btn" onclick="analyzeData('{{url_for('analyzer')}}');">
+                Analyze
+            </button>
+
+            <center>
+                <div id="analyzeData_alert_wrapper"></div>
+
+                <div class="progress_bar invisible" id="analyzeData_progress_wrapper">
+                    <p>Analyze progress</p>
+                    <div class="progress">
+                        <div aria-valuemax="100" aria-valuemin="0" aria-valuenow="25" class="progress-bar"
+                             id="analyzeData_progressbar" role="progressbar" style="width: 0%;">0%
+                        </div>
                     </div>
                 </div>
-            </div>
-            <button class="button">Stop analyzing</button>
-            <center>
-                <div class="alert alert-success" role="alert">
-                    Analyze success!
-                </div>
-                <div class="alert alert-danger" role="alert">
-                    Analyze failed!
-                </div>
+
+                <button class="button btn btn-secondary invisible" id="analyzeStop_btn" type="button">
+                    Stop analyzing
+                </button>
+                <br>
+                <button class="button btn btn-primary invisible" id="result_btn">
+                    Result
+                </button>
             </center>
-            <button class="button result">Result</button>
         </div>
     </div>
 </div>

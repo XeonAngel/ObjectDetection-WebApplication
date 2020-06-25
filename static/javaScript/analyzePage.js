@@ -22,23 +22,19 @@ $(document).ready(function () {
 
 // Get a reference to the progress bar, wrapper & status label
 const progress = document.getElementById("uploadProgressBar");
-const progress_wrapper = document.getElementById("progress_wrapper");
-
+const progress_wrapper = document.getElementById("uploadData_progress_wrapper");
 // Get a reference to the 3 buttons
 const upload_btn = document.getElementById("upload_btn");
-const cancel_btn = document.getElementById("cancel_btn");
-
+const cancel_btn = document.getElementById("uploadData_cancel_btn");
 // Get a reference to the alert wrapper
-const alert_wrapper = document.getElementById("alert_wrapper");
-
+const alert_wrapper = document.getElementById("uploadData_alert_wrapper");
 // Get a reference to the file input element & input label
 const input = document.getElementById("file_input");
 const file_input_label = document.getElementById("file_input_label");
-
 const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
 
-function show_alert(message, alert) {
-    alert_wrapper.innerHTML = `
+function show_alert(message, alert, alert_wrapper_dest) {
+    alert_wrapper_dest.innerHTML = `
     <div id="alert" class="alert alert-${alert} alert-dismissible fade show" role="alert">
       <span>${message}</span>
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -52,7 +48,7 @@ function show_alert(message, alert) {
 function uploadData(url) {
     // Reject if the file input is empty & throw alert
     if (!input.value) {
-        show_alert("No file selected", "warning")
+        show_alert("No file selected", "warning", alert_wrapper)
         return;
     }
 
@@ -84,7 +80,7 @@ function uploadData(url) {
     const file = input.files[0];
     const fileType = file.type;
     if (!allowedTypes.includes(fileType)) {
-        show_alert("Please select a valid file (JPEG/JPG/PNG).", "warning");
+        show_alert("Please select a valid file (JPEG/JPG/PNG).", "warning", alert_wrapper);
         reset();
         return false;
     }
@@ -119,9 +115,9 @@ function uploadData(url) {
     // request load handler (transfer complete)
     request.addEventListener("load", function (e) {
         if (request.status == 200) {
-            show_alert(`${request.response.message}`, "success");
+            show_alert(`${request.response.message}`, "success", alert_wrapper);
         } else {
-            show_alert(`Error uploading file`, "danger");
+            show_alert(`Error uploading file`, "danger", alert_wrapper);
         }
         reset();
     });
@@ -130,14 +126,14 @@ function uploadData(url) {
     request.addEventListener("error", function (e) {
 
         reset();
-        show_alert(`Error uploading file`, "warning");
+        show_alert(`Error uploading file`, "warning", alert_wrapper);
 
     });
 
     // request abort handler
     request.addEventListener("abort", function (e) {
         reset();
-        show_alert(`Upload cancelled`, "primary");
+        show_alert(`Upload cancelled`, "primary", alert_wrapper);
     });
 
     // Open and send the request
@@ -180,4 +176,52 @@ function reset() {
 
     // Reset the input placeholder
     file_input_label.innerText = "Select file";
+}
+
+
+// Get a reference to the progress bar, wrapper & status label
+const analyze_progress = document.getElementById("analyzeData_progressbar");
+const analyze_progress_wrapper = document.getElementById("analyzeData_progress_wrapper");
+// Get a reference to the 3 buttons
+const analyze_btn = document.getElementById("analyze_btn");
+const analyze_dropdown_btn = document.getElementById("dropdown_button");
+const analyze_stop_btn = document.getElementById("analyzeStop_btn");
+const analyze_result_btn = document.getElementById("result_btn");
+// Get a reference to the alert wrapper
+const analyze_alert_wrapper = document.getElementById("analyzeData_alert_wrapper");
+
+// Function to upload file
+function analyzeData(url) {
+    // Create a new FormData instance
+    const data = analyze_dropdown_btn.innerText;
+
+    // Create a XMLHTTPRequest instance
+    const request = new XMLHttpRequest();
+
+    // Set the response type
+    request.responseType = "json";
+
+    // Clear any existing alerts
+    analyze_alert_wrapper.innerHTML = "";
+
+    // Hide the upload button
+    analyze_btn.classList.add("d-none");
+
+    // Show the cancel button
+    analyze_stop_btn.classList.remove("invisible");
+
+    // Show the progress bar
+    analyze_progress_wrapper.classList.remove("invisible");
+
+    // request load handler (transfer complete)
+    request.addEventListener("load", function (e) {
+        if (request.status == 200) {
+            show_alert(`${request.response.message}`, "success", analyze_alert_wrapper);
+        } else {
+            show_alert(`Error starting the analyze`, "danger", analyze_alert_wrapper);
+        }
+    });
+    // Open and send the request
+    request.open("post", url);
+    request.send(data);
 }
