@@ -224,4 +224,31 @@ function analyzeData(url) {
     // Open and send the request
     request.open("post", url);
     request.send(data);
+    setInterval(getProgress, 1000)
+}
+
+function getProgress() {
+    $.ajax({
+        url: '/getDetectionProgress',
+        type: 'post',
+        success: function (response) {
+            // Perform operation on the return value
+            // alert(response);
+            analyze_progress.setAttribute("style", `width: ${Math.floor(response.message)}%`);
+            // progress_status.innerText = `${Math.floor(percent_complete)}% uploaded`;
+
+            analyze_progress.innerText = `${Math.floor(response.message)}% uploaded`;
+        }
+    });
+}
+
+function stopDetectionScript(url) {
+    $.ajax({
+        url: url,
+        type: 'post',
+        success: function (response) {
+            // Perform operation on the return value
+            show_alert(`${response.message}`, "warning", analyze_alert_wrapper);
+        }
+    });
 }

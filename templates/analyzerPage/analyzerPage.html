@@ -85,7 +85,9 @@
                     </div>
                 </div>
 
-                <button class="button btn btn-secondary invisible" id="analyzeStop_btn" type="button">
+                <button class="button btn btn-secondary invisible" id="analyzeStop_btn"
+                        onclick="stopDetectionScript('{{url_for('stopDetection')}}');"
+                        type="button">
                     Stop analyzing
                 </button>
                 <br>

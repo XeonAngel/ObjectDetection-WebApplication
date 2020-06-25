@@ -1,6 +1,8 @@
 import datetime
 import os
 import subprocess
+import psutil
+import signal
 import uuid
 
 from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash, make_response
@@ -236,7 +238,26 @@ def analyzer():
                            classifierList=classifierList)
 
 
+@app.route("/getDetectionProgress", methods=['POST'])
+@login_required
+def getDetectionProgress():
+    userScanProgress = db.session.query(Users.scanProgress).filter(Users.id == current_user.id).first()
+    res = make_response(jsonify({"message": userScanProgress.scanProgress}), 200)
+    return res
+
+
+@app.route("/stopDetection", methods=['POST'])
+@login_required
+def stopDetection():
+    userDetectPid = db.session.query(Users.detectPid).filter(Users.id == current_user.id).first()
+    process = psutil.Process(userDetectPid.detectPid)
+    process.terminate()
+    res = make_response(jsonify({"message": "Scan stopped"}), 200)
+    return res
+
+
 @app.route("/uploadDataForAnalyzer", methods=['POST'])
+@login_required
 def uploadDataForAnalyzer():
     file = request.files["file"]
     filename = uuid.uuid4()
