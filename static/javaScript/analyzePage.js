@@ -220,7 +220,7 @@ function analyzeData(url) {
 
 function getProgress() {
     $.ajax({
-        url: '/getDetectionProgress',
+        url: '/getTrainingProgress',
         type: 'post',
         success: function (response) {
             // Perform operation on the return value

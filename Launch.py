@@ -38,12 +38,15 @@ class Classifiers(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     isDeployed = db.Column(db.Boolean, nullable=False)
+    isInTraining = db.Column(db.Boolean, nullable=False)
 
     classes = db.relationship('Classes', backref='classifier')
     historyClassifier = db.relationship("History", backref='classifier')
 
-    def __init__(self, name):
+    def __init__(self, name, isDeployed, isInTraining):
         self.name = name
+        self.isDeployed = isDeployed
+        self.isInTraining = isInTraining
 
 
 class Classes(db.Model):
@@ -55,6 +58,20 @@ class Classes(db.Model):
 
     def __init__(self, name, classifierId):
         self.name = name
+        self.classifierId = classifierId
+
+
+class TrainingEvolution(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    epoch = db.Column(db.Integer, nullable=False)
+    loss = db.Column(db.Float, nullable=False)
+    val_loss = db.Column(db.Float, nullable=False)
+    classifierId = db.Column(db.Integer, db.ForeignKey("classifiers.id"), nullable=False)
+
+    def __init__(self, epoch, loss, val_loss, classifierId):
+        self.epoch = epoch
+        self.loss = loss
+        self.val_loss = val_loss
         self.classifierId = classifierId
 
 
@@ -454,9 +471,12 @@ def showClassifierDetails():
         .filter(Classifiers.name == request.form['classifier']) \
         .first()
     classList = db.session.query(Classes.name).filter(Classes.classifierId == classifierDetails.id).all()
+    classifierEvolutionChart = db.session.query(TrainingEvolution). \
+        filter(TrainingEvolution.classifierId == classifierDetails.id).all()
 
     return render_template("classifiersPage/adminClassifierDetailSection.html",
-                           classifierDetails=classifierDetails, classList=classList)
+                           classifierDetails=classifierDetails, classList=classList,
+                           classifierEvolutionChart=classifierEvolutionChart)
 
 
 @app.route("/uploadDataForTraining", methods=['POST'])
@@ -482,6 +502,8 @@ def uploadDataForTraining():
 @app.route("/trainClassifier", methods=['POST'])
 @login_required
 def trainClassifier():
+    batch_size = 1
+    epoch = 20
     adminUser = db.session.query(Users).filter(Users.id == current_user.id).first()
     if not adminUser.isAdmin:
         return "Permission Denied"
@@ -489,33 +511,38 @@ def trainClassifier():
     routePath = 'http://127.0.0.1:5000' + url_for("trainingProgressCount")
     if data['trainingType'] == 'clean':
         processPath = 'python ' + os.path.join('MachineLearning', 'train.py') + \
-                      ' --batch_size {} --epochs {} --mode fit --transfer none'.format(10, 2) + \
+                      ' --batch_size {} --epochs {} --mode fit --transfer none'.format(batch_size, epoch) + \
                       ' --classifier {} --username {} --serverPath {}'.format(data['classifier'],
                                                                               current_user.username,
                                                                               routePath)
+        classifierId = db.session.query(Classifiers.id).filter(Classifiers.name == data['classifier']).first()
+        db.session.query(TrainingEvolution).filter(TrainingEvolution.classifierId == classifierId.id).delete()
     elif data['trainingType'] == 'fine_tune':
         checkpointPath = os.path.join('MachineLearning', 'classifiers', data['classifier'], 'checkpoints')
         checkpointList = os.listdir(checkpointPath)
-        weights = checkpointList[-1].split('.')[0] + checkpointList[-1].split('.')[1]
         checkpointList.remove('checkpoint')
+        weights = os.path.join(checkpointPath,
+                               checkpointList[-1].split('.')[0] + '.' + checkpointList[-1].split('.')[1])
         processPath = 'python ' + os.path.join('MachineLearning', 'train.py') + \
-                      ' --batch_size {} --epochs {} --mode eager_fit --transfer fine_tune'.format(10, 2) + \
+                      ' --batch_size {} --epochs {} --mode eager_fit --transfer fine_tune'.format(batch_size, epoch) + \
                       ' --weights {}'.format(weights) + \
                       ' --classifier {} --username {} --serverPath {}'.format(data['classifier'],
                                                                               current_user.username,
                                                                               routePath)
     else:
         processPath = 'python ' + os.path.join('MachineLearning', 'train.py') + \
-                      ' --batch_size {} --epochs {} --mode fit --transfer darknet'.format(10, 2) + \
+                      ' --batch_size {} --epochs {} --mode fit --transfer darknet'.format(batch_size, epoch) + \
                       ' --classifier {} --username {} --serverPath {}'.format(data['classifier'],
                                                                               current_user.username,
                                                                               routePath)
+        classifierId = db.session.query(Classifiers.id).filter(Classifiers.name == data['classifier']).first()
+        db.session.query(TrainingEvolution).filter(TrainingEvolution.classifierId == classifierId.id).delete()
 
     proc = subprocess.Popen(processPath)
     adminUser.trainPid = proc.pid
     adminUser.trainProgress = 0
-    #TODO: add only one person can train one classifier
-    #TODO: dont dispay in training Classifers to user using isTraining
+    # TODO: add only one person can train one classifier
+    # TODO: dont dispay in training Classifers to user using isTraining
     db.session.commit()
 
     res = make_response(jsonify({"message": "Training started"}), 200)
@@ -531,42 +558,55 @@ def trainingProgressCount():
     username = form['username']
     userCurrent = db.session.query(Users).filter(Users.username == username).first()
 
-    if 'imageProgress' in form:
-        imageProgress = form['imageProgress']
-        imageTotal = form['imageTotal']
-        imageName = form['imageName']
-        classesFoundList = form['classesFound'].split(',')
-        classesFoundDict = {}
-        for classFound in classesFoundList:
-            if classFound != '':
-                if classFound in classesFoundDict:
-                    classesFoundDict[classFound] += 1
-                else:
-                    classesFoundDict[classFound] = 1
+    if 'loss' in form:
+        loss = form['loss']
+        val_loss = form['val_loss']
+        epoch = form['epoch']
+        total_epoch = form['total_epoch']
 
-        if classesFoundDict:
-            userHistory = History(imageName, datetime.date.today(), 1, classifierId.id, userCurrent.id)
-            db.session.add(userHistory)
-
-        userCurrent.scanProgress = (int(imageProgress) * 100) / int(imageTotal)
+        userCurrent.trainProgress = (int(epoch) * 100) / int(total_epoch)
         db.session.commit()
 
-        for key, value in classesFoundDict.items():
-            classId = db.session.query(Classes.id).filter(Classes.name == key).first()
-            userHistoryClasses = HistoryClasses(userHistory.id, classId.id, value)
-            db.session.add(userHistoryClasses)
-            db.session.commit()
+        newTrainingEvaluation = TrainingEvolution(int(epoch), float(loss), float(val_loss), classifierId.id)
+        db.session.add(newTrainingEvaluation)
+        db.session.commit()
 
-        return make_response('Image added', 200)
+        return make_response('Evaluation added', 200)
 
-    imagesScanned = form['imagesScanned']
-
-    userCurrent.detectPid = -1
-    total = userCurrent.TotalImagesScanned + int(imagesScanned)
-    userCurrent.TotalImagesScanned = total
+    userCurrent.trainPid = -1
     db.session.commit()
 
-    return make_response('Scan complete', 200)
+    return make_response('Training complete', 200)
+
+
+@app.route("/getTrainingProgress", methods=['POST'])
+@login_required
+def getTrainingProgress():
+    classifierTrainingProgress = db.session.query(Users).filter(Users.id == current_user.id).first()
+    if classifierTrainingProgress.trainProgress == 100:
+        classifierTrainingProgress.trainProgress = -1
+        db.session.commit()
+        res = make_response(jsonify({"message": 100}), 200)
+        return res
+    res = make_response(jsonify({"message": classifierTrainingProgress.trainProgress}), 200)
+    return res
+
+
+@app.route("/stopTraining", methods=['POST'])
+@login_required
+def stopTraining():
+    userTrainingPid = db.session.query(Users).filter(Users.id == current_user.id).first()
+    try:
+        process = psutil.Process(userTrainingPid.trainPid)
+        process.terminate()
+    except:
+        res = make_response(jsonify({"message": "Training stopped"}), 200)
+        return res
+    userTrainingPid.trainPid = -1
+    userTrainingPid.trainProgress = -1
+    db.session.commit()
+    res = make_response(jsonify({"message": "Training stopped"}), 200)
+    return res
 
 
 # ----------------------History Region

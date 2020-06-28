@@ -1,4 +1,6 @@
 import os
+import requests
+
 import numpy as np
 import tensorflow as tf
 from absl import app, flags, logging
@@ -36,7 +38,7 @@ flags.DEFINE_enum('transfer', 'none',
                   'no_output: Transfer all but output, '
                   'frozen: Transfer and freeze all, '
                   'fine_tune: Transfer all and freeze darknet only')
-flags.DEFINE_string('weights', './transferTrainingStart/yolov3.tf', 'path to weights file')
+flags.DEFINE_string('weights', './MachineLearning/transferTrainingStart/yolov3.tf', 'path to weights file')
 flags.DEFINE_integer('weights_num_classes', 80, 'specify num class for `weights` file if different')
 
 
@@ -45,10 +47,10 @@ def main(_argv):
     for physical_device in physical_devices:
         tf.config.experimental.set_memory_growth(physical_device, True)
 
-    classifierPath = './classifiers/' + FLAGS.classifier
-    datasetPath = classifierPath + '/' + FLAGS.classifier + '_train.tfrecord'
-    valDatasetPath = classifierPath + '/' + FLAGS.classifier + '_val.tfrecord'
-    classesPath = classifierPath + '/' + FLAGS.classifier + '.names'
+    classifierPath = os.path.join('MachineLearning', 'classifiers', FLAGS.classifier)
+    datasetPath = os.path.join(classifierPath, FLAGS.classifier + '_train.tfrecord')
+    valDatasetPath = os.path.join(classifierPath, FLAGS.classifier + '_val.tfrecord')
+    classesPath = os.path.join(classifierPath, FLAGS.classifier + '.names')
     class_names = [c.strip() for c in open(classesPath).readlines()]
     numClasses = len(class_names)
 
@@ -188,11 +190,22 @@ def main(_argv):
     os.remove(valDatasetPath)
     logging.info('Dataset cleaned\n')
 
+    data = {'trainingStatus': 'Done',
+            'classifier': FLAGS.classifier,
+            'username': FLAGS.username}
+    requests.post(url=FLAGS.serverPath, data=data)
+
 
 class CustomCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
-        keys = list(logs.keys())
-        print("Epoch {} ended; got log keys: {}\n".format(epoch, keys))
+        # keys = list(logs.keys())
+        data = {'loss': logs['loss'],
+                'val_loss': logs['val_loss'],
+                'epoch': epoch + 1,
+                'total_epoch': FLAGS.epochs,
+                'classifier': FLAGS.classifier,
+                'username': FLAGS.username}
+        requests.post(url=FLAGS.serverPath, data=data)
 
 
 if __name__ == '__main__':

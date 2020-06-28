@@ -19,7 +19,10 @@
 </div>
 <div class="row d-none" id="DetailsDiv">
     <div class="col">
-        Details
+       <canvas id="myChart"
+               width="300" height="300"
+               class="chartjs-render-monitor">
+       </canvas>
     </div>
 </div>
 <div class="row d-none" id="TrainDiv">
@@ -77,11 +80,65 @@
                 </div>
             </div>
         </div>
-        <button class="button btn btn-secondary invisible" id="trainData_cancel_btn" type="button">
+        <button class="button btn btn-secondary invisible" id="trainData_cancel_btn" type="button"
+                onclick="stopDetectionScript('{{url_for('stopTraining')}}');">
             Cancel train
         </button>
 
 
     </div>
 </div>
-{{classifierDetails.name}}
+
+<script>
+var ctx = document.getElementById('myChart').getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [
+                {%for label in classifierEvolutionChart%}
+                {{label.epoch}},
+                {%endfor%}
+                ],
+        datasets: [{
+            label: 'loss',
+            data: [
+                {%for label in classifierEvolutionChart%}
+                {{label.loss}},
+                {%endfor%}
+            ],
+            backgroundColor: [
+                'rgb(54, 162, 235)'
+            ],
+            borderColor: [
+                'rgb(54, 162, 235)'
+            ],
+            fill: false,
+            borderWidth: 1
+        },{
+            label: 'val_loss',
+            data: [
+                {%for label in classifierEvolutionChart%}
+                {{label.val_loss}},
+                {%endfor%}
+            ],
+            backgroundColor: [
+                'rgb(255, 205, 86)'
+            ],
+            borderColor: [
+                'rgb(255, 205, 86)'
+            ],
+            fill: false,
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true
+                }
+            }]
+        }
+    }
+});
+</script>

@@ -103,6 +103,7 @@ let file_input_label = document.getElementById("file_input_label");
 let allowedTypes = ['application/vnd.rar', 'application/x-7z-compressed', 'application/zip',
     'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed',
     'application/x-rar-compressed', 'application/x-tar'];
+let timedFunction
 
 function show_alert(message, alert, alert_wrapper_dest) {
     alert_wrapper_dest.innerHTML = `
@@ -265,11 +266,11 @@ function train(url, classifier, trainingType) {
 
     // Disable the input during upload
     // input.disabled = true;
-    document.getElementsByClassName("custom-file")[0].classList.add('d-none');
+    document.getElementsByClassName("custom-file")[0].classList.add('invisible');
 
     // Hide the upload button
-    upload_btn.classList.add("d-none");
-    train_btn_div.classList.add("d-none");
+    upload_btn.classList.add("invisible");
+    train_btn_div.classList.add("invisible");
 
     // Show the cancel button
     train_cancel_btn.classList.remove("invisible");
@@ -294,4 +295,48 @@ function train(url, classifier, trainingType) {
     // Open and send the request
     request.open("post", url);
     request.send(data);
+    timedFunction = setInterval(getProgress, 10000)
+}
+
+
+function getProgress() {
+    $.ajax({
+        url: '/getTrainingProgress',
+        type: 'post',
+        success: function (response) {
+            // Perform operation on the return value
+            let progressValue = Math.floor(response.message)
+            trainProgress.setAttribute("style", `width: ${Math.floor(response.message)}%`);
+            trainProgress.innerText = `${Math.floor(response.message)}% training done`;
+
+            if (progressValue == 100) {
+                clearInterval(timedFunction)
+                show_alert(`Scan ended`, "success", train_alert_wrapper);
+                document.getElementsByClassName("custom-file")[0].classList.remove('invisible');
+                upload_btn.classList.remove('invisible')
+                train_progress_wrapper.classList.add('invisible')
+                analyze_stop_btn.classList.add("invisible");
+                train_cancel_btn.classList.add('invisible');
+            }
+        }
+    });
+}
+
+
+function stopDetectionScript(url) {
+    clearInterval(timedFunction)
+
+    $.ajax({
+        url: url,
+        type: 'post',
+        success: function (response) {
+            // Perform operation on the return value
+            show_alert(`${response.message}`, "warning", train_alert_wrapper);
+
+            document.getElementsByClassName("custom-file")[0].classList.remove('invisible');
+            upload_btn.classList.remove('invisible')
+            train_progress_wrapper.classList.add('invisible')
+            analyze_stop_btn.classList.add("invisible");
+        }
+    });
 }
