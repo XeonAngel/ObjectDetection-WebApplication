@@ -82,9 +82,9 @@ def parse_xml(xml):
 
 
 def main(_argv):
-    dataDirectory = './classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '-PascalVOC-export'
+    dataDirectory = './MachineLearning/classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '-PascalVOC-export'
     labelMapPath = dataDirectory + '/pascal_label_map.pbtxt'
-    classesNamePath = './classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '.names'
+    classesNamePath = './MachineLearning/classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '.names'
     classList = ''
     with open(labelMapPath) as f:
         for line in f:
@@ -105,7 +105,7 @@ def main(_argv):
     splitList = ['train', 'val']
     for split in splitList:
         writer = tf.io.TFRecordWriter(
-            './classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '_' + split + '.tfrecord')
+            './MachineLearning/classifiers/' + FLAGS.classifier + '/' + FLAGS.classifier + '_' + split + '.tfrecord')
         imagesPath = os.path.join(dataDirectory, 'ImageSets', 'Main', next(iter(class_map)) + '_%s.txt' % split)
         image_list = open(imagesPath).read().splitlines()
         logging.info("Image list loaded: %d", len(image_list))

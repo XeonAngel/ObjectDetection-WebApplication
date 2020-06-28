@@ -1,0 +1,14 @@
+{%for classifier in classifierList%}
+<div class="classList">
+    <input
+           name="classifierCheckBox"
+           type="checkbox" value="{{classifier.name}}"
+           {%if classifier.isDeployed%}
+           checked
+           {%endif%}
+           >
+    <label onclick="showDetails()">
+        {{classifier.name}}
+    </label>
+</div>
+{%endfor%}

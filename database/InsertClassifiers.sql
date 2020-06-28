@@ -1,3 +1,3 @@
 INSERT INTO "main"."classifiers"
-("name")
-VALUES ('General'), ('Weapons');
+("name", "isDeployed")
+VALUES ('General',1), ('Weapons',1);

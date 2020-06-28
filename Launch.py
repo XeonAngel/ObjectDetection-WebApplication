@@ -2,7 +2,7 @@ import datetime
 import os
 import subprocess
 import psutil
-import signal
+from pyunpack import Archive
 import uuid
 
 from flask import Flask, render_template, redirect, url_for, jsonify, request, send_from_directory, flash, make_response
@@ -37,6 +37,7 @@ ulrSerializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 class Classifiers(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+    isDeployed = db.Column(db.Boolean, nullable=False)
 
     classes = db.relationship('Classes', backref='classifier')
     historyClassifier = db.relationship("History", backref='classifier')
@@ -234,14 +235,20 @@ def analyzer():
 
     classifierList = db.session.query(Classifiers.name).all()
 
-    return render_template("analyzerPage/analyzerPage.html", isAdminOnPage=current_user.isAdmin,
-                           classifierList=classifierList)
+    return render_template("analyzerPage/analyzerPage.html",
+                           isAdminOnPage=current_user.isAdmin, classifierList=classifierList,
+                           scanProgress=updatedUser.scanProgress, detectPid=updatedUser.detectPid)
 
 
 @app.route("/getDetectionProgress", methods=['POST'])
 @login_required
 def getDetectionProgress():
     userScanProgress = db.session.query(Users.scanProgress).filter(Users.id == current_user.id).first()
+    if userScanProgress.scanProgress == 100:
+        userScanProgress.scanProgress = -1
+        db.session.commit()
+        res = make_response(jsonify({"message": 100}), 200)
+        return res
     res = make_response(jsonify({"message": userScanProgress.scanProgress}), 200)
     return res
 
@@ -249,9 +256,16 @@ def getDetectionProgress():
 @app.route("/stopDetection", methods=['POST'])
 @login_required
 def stopDetection():
-    userDetectPid = db.session.query(Users.detectPid).filter(Users.id == current_user.id).first()
-    process = psutil.Process(userDetectPid.detectPid)
-    process.terminate()
+    userDetectPid = db.session.query(Users).filter(Users.id == current_user.id).first()
+    try:
+        process = psutil.Process(userDetectPid.detectPid)
+        process.terminate()
+    except:
+        res = make_response(jsonify({"message": "Scan stopped"}), 200)
+        return res
+    userDetectPid.detectPid = -1
+    userDetectPid.scanProgress = -1
+    db.session.commit()
     res = make_response(jsonify({"message": "Scan stopped"}), 200)
     return res
 
@@ -259,11 +273,24 @@ def stopDetection():
 @app.route("/uploadDataForAnalyzer", methods=['POST'])
 @login_required
 def uploadDataForAnalyzer():
-    file = request.files["file"]
-    filename = uuid.uuid4()
-    fileType = '.' + file.filename.split('.')[-1]
     path = os.path.join('MachineLearning', 'userData', current_user.username, 'toScan')
+    for file in os.listdir(path):
+        os.remove(os.path.join(path, file))
+
+    file = request.files["file"]
+    fileType = '.' + file.filename.split('.')[-1]
+    filename = uuid.uuid4()
     file.save(os.path.join(path, str(filename) + fileType))
+
+    if fileType == '.zip' or fileType == '.7z' or fileType == '.rar' or fileType == '.tar':
+        archineFile = os.path.join(path, str(filename) + fileType)
+        Archive(archineFile).extractall(path)
+        os.remove(os.path.join(path, str(filename) + fileType))
+        imagesList = os.listdir(path)
+        for image in imagesList:
+            fileType = '.' + image.split('.')[-1]
+            filename = uuid.uuid4()
+            os.rename(os.path.join(path, image), os.path.join(path, str(filename) + fileType))
 
     res = make_response(jsonify({"message": "File uploaded"}), 200)
     return res
@@ -304,16 +331,41 @@ def analyzerProgressCount():
             db.session.add(userHistoryClasses)
             db.session.commit()
 
-        return make_response('Test worked!', 200)
+        return make_response('Image added', 200)
 
     imagesScanned = form['imagesScanned']
 
-    userCurrent.detectPid = -2
+    userCurrent.detectPid = -1
     total = userCurrent.TotalImagesScanned + int(imagesScanned)
     userCurrent.TotalImagesScanned = total
     db.session.commit()
 
-    return make_response('Test worked!', 200)
+    return make_response('Scan complete', 200)
+
+
+@app.route("/analyzerShowResult")
+@login_required
+def analyzerShowResult():
+    classifierList = db.session.query(Classifiers.name).all()
+    classList = db.session.query(Classes.name).distinct(Classes.name).all()
+    firstFiveClassList = []
+    for i in range(0, 5):
+        if len(classList) != 0:
+            firstFiveClassList.append(classList.pop(0))
+
+    imagePaths = db.session.query(History.imagePath, History.id) \
+        .filter(History.userId == current_user.id) \
+        .filter(History.isLastScan == 1) \
+        .group_by(History.id) \
+        .all()
+
+    return render_template("historyPage.html", isAdminOnPage=current_user.isAdmin,
+                           classifierList=classifierList,
+                           classList=classList,
+                           firstFiveClassList=firstFiveClassList,
+                           imagePaths=imagePaths,
+                           searchResultNumber=len(imagePaths),
+                           givenUsername=current_user.username)
 
 
 # ----------------------Classifiers Region
@@ -321,8 +373,10 @@ def analyzerProgressCount():
 @login_required
 def classifiers():
     if current_user.isAdmin:
-        return render_template("adminClassifiersPage.html")
-    return render_template("userClassifiersPage.html")
+        classifierList = db.session.query(Classifiers.name, Classifiers.isDeployed).all()
+        return render_template("classifiersPage/adminClassifiersPage.html",
+                               classifierList=classifierList)
+    return render_template("classifiersPage/userClassifiersPage.html")
 
 
 @app.route("/userclassifierslist/<classToFind>")
@@ -353,6 +407,166 @@ def classesforclassifier(classifier):
             .filter(Classifiers.name.contains(classifier)) \
             .filter(Classifiers.name is not None).all()
     return render_template("iframes/userClassesListIframe.html", classList=classList)
+
+
+@app.route("/updateDeployedClassifiers", methods=['POST'])
+@login_required
+def updateDeployedClassifiers():
+    if not current_user.isAdmin:
+        return "<h1>Not authorized</h1>"
+
+    classifierFilterList = request.form.getlist("classifierCheckBox")
+    classifierList = db.session.query(Classifiers).all()
+    for classifier in classifierList:
+        if classifier.name in classifierFilterList:
+            classifier.isDeployed = True
+        else:
+            classifier.isDeployed = False
+
+    db.session.commit()
+    return redirect(url_for('classifiers'))
+
+
+@app.route("/updateClassifierList", methods=['POST'])
+@login_required
+def updateClassifierList():
+    if not current_user.isAdmin:
+        return "<h1>Not authorized</h1>"
+    filterList = []
+    if request.form['classifier'] != '':
+        filterList = {Classifiers.name.contains(request.form['classifier'])}
+
+    classifierList = db.session.query(Classifiers.name, Classifiers.isDeployed) \
+        .filter(*filterList) \
+        .all()
+
+    return render_template("classifiersPage/adminClassifierSectionPage.html",
+                           classifierList=classifierList)
+
+
+@app.route("/showClassifierDetails", methods=['POST'])
+@login_required
+def showClassifierDetails():
+    if not current_user.isAdmin:
+        return "<h1>Not authorized</h1>"
+
+    classifierDetails = db.session.query(Classifiers) \
+        .filter(Classifiers.name == request.form['classifier']) \
+        .first()
+    classList = db.session.query(Classes.name).filter(Classes.classifierId == classifierDetails.id).all()
+
+    return render_template("classifiersPage/adminClassifierDetailSection.html",
+                           classifierDetails=classifierDetails, classList=classList)
+
+
+@app.route("/uploadDataForTraining", methods=['POST'])
+@login_required
+def uploadDataForTraining():
+    classifierName = request.form['classifier']
+    path = os.path.join('MachineLearning', 'classifiers', classifierName)
+
+    file = request.files["file"]
+    file.save(os.path.join(path, file.filename))
+    archiveFile = os.path.join(path, file.filename)
+    Archive(archiveFile).extractall(path)
+    os.remove(os.path.join(path, file.filename))
+    transformDatasetScriptPath = 'python ' + \
+                                 os.path.join('MachineLearning', "convertPascalVocToTfrecord.py") + \
+                                 " --classifier {}".format(classifierName)
+    subprocess.run(transformDatasetScriptPath)
+
+    res = make_response(jsonify({"message": "File uploaded"}), 200)
+    return res
+
+
+@app.route("/trainClassifier", methods=['POST'])
+@login_required
+def trainClassifier():
+    adminUser = db.session.query(Users).filter(Users.id == current_user.id).first()
+    if not adminUser.isAdmin:
+        return "Permission Denied"
+    data = request.form
+    routePath = 'http://127.0.0.1:5000' + url_for("trainingProgressCount")
+    if data['trainingType'] == 'clean':
+        processPath = 'python ' + os.path.join('MachineLearning', 'train.py') + \
+                      ' --batch_size {} --epochs {} --mode fit --transfer none'.format(10, 2) + \
+                      ' --classifier {} --username {} --serverPath {}'.format(data['classifier'],
+                                                                              current_user.username,
+                                                                              routePath)
+    elif data['trainingType'] == 'fine_tune':
+        checkpointPath = os.path.join('MachineLearning', 'classifiers', data['classifier'], 'checkpoints')
+        checkpointList = os.listdir(checkpointPath)
+        weights = checkpointList[-1].split('.')[0] + checkpointList[-1].split('.')[1]
+        checkpointList.remove('checkpoint')
+        processPath = 'python ' + os.path.join('MachineLearning', 'train.py') + \
+                      ' --batch_size {} --epochs {} --mode eager_fit --transfer fine_tune'.format(10, 2) + \
+                      ' --weights {}'.format(weights) + \
+                      ' --classifier {} --username {} --serverPath {}'.format(data['classifier'],
+                                                                              current_user.username,
+                                                                              routePath)
+    else:
+        processPath = 'python ' + os.path.join('MachineLearning', 'train.py') + \
+                      ' --batch_size {} --epochs {} --mode fit --transfer darknet'.format(10, 2) + \
+                      ' --classifier {} --username {} --serverPath {}'.format(data['classifier'],
+                                                                              current_user.username,
+                                                                              routePath)
+
+    proc = subprocess.Popen(processPath)
+    adminUser.trainPid = proc.pid
+    adminUser.trainProgress = 0
+    #TODO: add only one person can train one classifier
+    #TODO: dont dispay in training Classifers to user using isTraining
+    db.session.commit()
+
+    res = make_response(jsonify({"message": "Training started"}), 200)
+    return res
+
+
+@app.route("/trainingProgressCount", methods=['POST'])
+def trainingProgressCount():
+    form = request.form
+
+    classifierName = form['classifier']
+    classifierId = db.session.query(Classifiers.id).filter(Classifiers.name == classifierName).first()
+    username = form['username']
+    userCurrent = db.session.query(Users).filter(Users.username == username).first()
+
+    if 'imageProgress' in form:
+        imageProgress = form['imageProgress']
+        imageTotal = form['imageTotal']
+        imageName = form['imageName']
+        classesFoundList = form['classesFound'].split(',')
+        classesFoundDict = {}
+        for classFound in classesFoundList:
+            if classFound != '':
+                if classFound in classesFoundDict:
+                    classesFoundDict[classFound] += 1
+                else:
+                    classesFoundDict[classFound] = 1
+
+        if classesFoundDict:
+            userHistory = History(imageName, datetime.date.today(), 1, classifierId.id, userCurrent.id)
+            db.session.add(userHistory)
+
+        userCurrent.scanProgress = (int(imageProgress) * 100) / int(imageTotal)
+        db.session.commit()
+
+        for key, value in classesFoundDict.items():
+            classId = db.session.query(Classes.id).filter(Classes.name == key).first()
+            userHistoryClasses = HistoryClasses(userHistory.id, classId.id, value)
+            db.session.add(userHistoryClasses)
+            db.session.commit()
+
+        return make_response('Image added', 200)
+
+    imagesScanned = form['imagesScanned']
+
+    userCurrent.detectPid = -1
+    total = userCurrent.TotalImagesScanned + int(imagesScanned)
+    userCurrent.TotalImagesScanned = total
+    db.session.commit()
+
+    return make_response('Scan complete', 200)
 
 
 # ----------------------History Region

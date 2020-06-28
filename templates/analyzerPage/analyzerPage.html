@@ -14,8 +14,8 @@
 <div class="container">
     <div class="row">
         <div class="button-group" id="button-groupID">
-            <button class="button left_button active">Upload data</button>
-            <button class="button right_button">Analyze</button>
+            <button class="button left_button active" id="uploadDataDivButton">Upload data</button>
+            <button class="button right_button" id="analyzeDataDivButton">Analyze</button>
         </div>
     </div>
     <div class="row" id="uploadDataDiv">
@@ -68,7 +68,6 @@
                     <span class="fa fa-question-circle right-relative" onclick="window.location='/classifiers'"></span>
                 </div>
             </div>
-            <!--            <button class="button">Analyze</button>-->
             <button class="btn btn-primary" id="analyze_btn" onclick="analyzeData('{{url_for('analyzer')}}');">
                 Analyze
             </button>
@@ -91,7 +90,8 @@
                     Stop analyzing
                 </button>
                 <br>
-                <button class="button btn btn-primary invisible" id="result_btn">
+                <button class="button btn btn-primary invisible" id="result_btn"
+                        onclick="location.href = '{{url_for('analyzerShowResult')}}';">
                     Result
                 </button>
             </center>

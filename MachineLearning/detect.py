@@ -80,6 +80,7 @@ def detect(_argv):
                 'imageName': image,
                 'classesFound': foundClasses}
         requests.post(url=FLAGS.serverPath, data=data)
+        foundClasses = ''
 
     data = {'imagesScanned': imageTotal,
             'classifier': classifier,

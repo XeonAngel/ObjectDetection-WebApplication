@@ -19,11 +19,14 @@ $(document).ready(function () {
 
 });
 
+// Get reference to the 2 tab buttons
+const uploadDataDivButton = document.getElementById("uploadDataDivButton");
+const analyzeDataDivButton = document.getElementById("analyzeDataDivButton");
 
 // Get a reference to the progress bar, wrapper & status label
 const progress = document.getElementById("uploadProgressBar");
 const progress_wrapper = document.getElementById("uploadData_progress_wrapper");
-// Get a reference to the 3 buttons
+// Get a reference to the 2 buttons
 const upload_btn = document.getElementById("upload_btn");
 const cancel_btn = document.getElementById("uploadData_cancel_btn");
 // Get a reference to the alert wrapper
@@ -31,7 +34,9 @@ const alert_wrapper = document.getElementById("uploadData_alert_wrapper");
 // Get a reference to the file input element & input label
 const input = document.getElementById("file_input");
 const file_input_label = document.getElementById("file_input_label");
-const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/vnd.rar', 'application/x-7z-compressed',
+    'application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed',
+    'application/x-rar-compressed', 'application/x-tar'];
 
 function show_alert(message, alert, alert_wrapper_dest) {
     alert_wrapper_dest.innerHTML = `
@@ -80,7 +85,7 @@ function uploadData(url) {
     const file = input.files[0];
     const fileType = file.type;
     if (!allowedTypes.includes(fileType)) {
-        show_alert("Please select a valid file (JPEG/JPG/PNG).", "warning", alert_wrapper);
+        show_alert("Please select a valid file (JPEG/JPG/PNG/ZIP/RAR/TAR).", "warning", alert_wrapper);
         reset();
         return false;
     }
@@ -165,9 +170,6 @@ function reset() {
     // Show the upload button
     upload_btn.classList.remove("d-none");
 
-    // Hide the loading button
-    // loading_btn.classList.add("d-none");
-
     // Hide the progress bar
     progress_wrapper.classList.add("invisible");
 
@@ -179,38 +181,27 @@ function reset() {
 }
 
 
-// Get a reference to the progress bar, wrapper & status label
+// Reference to the progress bar, wrapper
 const analyze_progress = document.getElementById("analyzeData_progressbar");
 const analyze_progress_wrapper = document.getElementById("analyzeData_progress_wrapper");
-// Get a reference to the 3 buttons
+// Reference to the 4 buttons
 const analyze_btn = document.getElementById("analyze_btn");
 const analyze_dropdown_btn = document.getElementById("dropdown_button");
 const analyze_stop_btn = document.getElementById("analyzeStop_btn");
 const analyze_result_btn = document.getElementById("result_btn");
-// Get a reference to the alert wrapper
+// Reference to the alert wrapper
 const analyze_alert_wrapper = document.getElementById("analyzeData_alert_wrapper");
+//Timed function
+let timedFunction
 
-// Function to upload file
 function analyzeData(url) {
-    // Create a new FormData instance
     const data = analyze_dropdown_btn.innerText;
-
-    // Create a XMLHTTPRequest instance
     const request = new XMLHttpRequest();
-
-    // Set the response type
     request.responseType = "json";
-
-    // Clear any existing alerts
     analyze_alert_wrapper.innerHTML = "";
 
-    // Hide the upload button
     analyze_btn.classList.add("d-none");
-
-    // Show the cancel button
     analyze_stop_btn.classList.remove("invisible");
-
-    // Show the progress bar
     analyze_progress_wrapper.classList.remove("invisible");
 
     // request load handler (transfer complete)
@@ -224,7 +215,7 @@ function analyzeData(url) {
     // Open and send the request
     request.open("post", url);
     request.send(data);
-    setInterval(getProgress, 1000)
+    timedFunction = setInterval(getProgress, 1000)
 }
 
 function getProgress() {
@@ -233,22 +224,32 @@ function getProgress() {
         type: 'post',
         success: function (response) {
             // Perform operation on the return value
-            // alert(response);
+            let progressValue = Math.floor(response.message)
             analyze_progress.setAttribute("style", `width: ${Math.floor(response.message)}%`);
-            // progress_status.innerText = `${Math.floor(percent_complete)}% uploaded`;
-
             analyze_progress.innerText = `${Math.floor(response.message)}% uploaded`;
+
+            if (progressValue == 100) {
+                clearInterval(timedFunction)
+                show_alert(`Scan ended`, "success", analyze_alert_wrapper);
+                analyze_result_btn.classList.remove("invisible");
+                analyze_stop_btn.classList.add('invisible');
+            }
         }
     });
 }
 
 function stopDetectionScript(url) {
+    clearInterval(timedFunction)
+
     $.ajax({
         url: url,
         type: 'post',
         success: function (response) {
             // Perform operation on the return value
             show_alert(`${response.message}`, "warning", analyze_alert_wrapper);
+
+            analyze_btn.classList.remove("d-none");
+            analyze_stop_btn.classList.add("invisible");
         }
     });
 }

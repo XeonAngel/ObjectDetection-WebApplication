@@ -11,14 +11,16 @@ from tensorflow.keras.callbacks import (
     Callback
 )
 
-import yolov3_tf2.dataset as dataset
-from yolov3_tf2.models import (
+import MachineLearning.yolov3_tf2.dataset as dataset
+from MachineLearning.yolov3_tf2.models import (
     YoloV3, YoloLoss,
     yolo_anchors, yolo_anchor_masks
 )
-from yolov3_tf2.utils import freeze_all
+from MachineLearning.yolov3_tf2.utils import freeze_all
 
 flags.DEFINE_string('classifier', '', 'classifier name')
+flags.DEFINE_string('username', '', 'username')
+flags.DEFINE_string('serverPath', '', 'serverPath')
 flags.DEFINE_integer('size', 416, 'image size')
 flags.DEFINE_integer('epochs', 8, 'number of epochs')
 flags.DEFINE_integer('batch_size', 8, 'batch size')
@@ -182,8 +184,8 @@ def main(_argv):
     for checkpoint in checkpointList:
         os.remove(classifierPath + "/checkpoints/" + checkpoint)
 
-    # os.remove(datasetPath)
-    # os.remove(valDatasetPath)
+    os.remove(datasetPath)
+    os.remove(valDatasetPath)
     logging.info('Dataset cleaned\n')
 
 

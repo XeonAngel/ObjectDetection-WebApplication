@@ -1,0 +1,87 @@
+<div class="row">
+    <div class="button-group" id="button-groupID">
+        <button class="button left_button active" id="ClassesDivButton">Classes</button>
+        <button class="button" id="DetailsDivButton">Details</button>
+        <button class="button right_button" id="TrainDivButton">Train</button>
+    </div>
+</div>
+<div class="row" id="ClassesDiv">
+    <div class="col">
+        Classes
+        <center>
+            <ul class="listGroup" id="classList">
+                {%for classes in classList%}
+                <li class="listItem">{{classes[0]}}</li>
+                {%endfor%}
+            </ul>
+        </center>
+    </div>
+</div>
+<div class="row d-none" id="DetailsDiv">
+    <div class="col">
+        Details
+    </div>
+</div>
+<div class="row d-none" id="TrainDiv">
+    <div class="col">
+        <div class="form-group mb-3">
+            <div class="custom-file">
+                <input class="custom-file-input" id="file_input" name="file_input" oninput="input_filename();"
+                       type="file">
+                <label class="custom-file-label" for="file_input" id="file_input_label">Select file</label>
+            </div>
+        </div>
+        <button class="btn btn-primary" id="upload_btn"
+                onclick="uploadData('{{url_for('uploadDataForTraining')}}','{{classifierDetails.name}}');">
+            Upload dataset
+        </button>
+        <center>
+            <div id="uploadData_alert_wrapper"></div>
+        </center>
+        <div class="progress_bar invisible" id="uploadData_progress_wrapper">
+            <p>Upload progress</p>
+            <div class="progress">
+                <div aria-valuemax="100" aria-valuemin="0" aria-valuenow="25" class="progress-bar"
+                     id='uploadProgressBar' role="progressbar" style="width: 0%;">0%
+                </div>
+            </div>
+        </div>
+        <button class="button btn btn-secondary invisible" id="uploadData_cancel_btn" type="button">
+            Cancel upload
+        </button>
+
+
+        <row id="trainButtonsDiv" class="invisible">
+            <button class="btn btn-primary" id="cleanTrain_btn"
+                    onclick="train('{{url_for('trainClassifier')}}','{{classifierDetails.name}}','clean');">
+                Clean Train
+            </button>
+            <button class="btn btn-primary" id="fineTuneTrain_btn"
+                    onclick="train('{{url_for('trainClassifier')}}','{{classifierDetails.name}}','fine_tune');">
+                Fine Tune Train
+            </button>
+            <button class="btn btn-primary" id="transferTrain_btn"
+                    onclick="train('{{url_for('trainClassifier')}}','{{classifierDetails.name}}','transfer');">
+                Transfer Train
+            </button>
+        </row>
+
+        <center>
+            <div id="trainData_alert_wrapper"></div>
+        </center>
+        <div class="progress_bar invisible" id="trainData_progress_wrapper">
+            <p>Train progress</p>
+            <div class="progress">
+                <div aria-valuemax="100" aria-valuemin="0" aria-valuenow="25" class="progress-bar"
+                     id='trainProgressBar' role="progressbar" style="width: 0%;">0%
+                </div>
+            </div>
+        </div>
+        <button class="button btn btn-secondary invisible" id="trainData_cancel_btn" type="button">
+            Cancel train
+        </button>
+
+
+    </div>
+</div>
+{{classifierDetails.name}}
