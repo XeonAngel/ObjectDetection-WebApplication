@@ -1,10 +1,10 @@
 {%for oneClass in classList%}
-<div class="ImagePrevClassList" style="display:inline">
-    <div>
-        {{oneClass.name}}
-    </div>
-    <div style="display: inline">
-        {{oneClass.numberOfClasses}}
-    </div>
+<div class="ImagePrevClassList" style=" border: solid darkgray 1px;
+                                        margin: 5px;
+                                        padding: 5px;
+                                        border-radius: 6px">
+    <center>
+        {{oneClass.name}} : {{oneClass.numberOfClasses}}
+    </center>
 </div>
 {%endfor%}

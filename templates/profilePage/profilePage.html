@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block styles %}{% endblock %}
+{% block styles %}
+<link href="{{url_for('static', filename='css/profile.css')}}" rel="stylesheet">
+{% endblock %}
 {% block title %} Profile {% endblock %}
 
 {% block body %}
@@ -11,27 +13,31 @@
 {% include "navBars/userNavBar.html" %}
 {% endif %}
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-{% for message in messages %}
-<div class="alert alert-success alert-dismissable" role="alert">
-    <button aria-label="close" class="close" data-dismiss="alert" type="button">
-        <span aria-hidden="true">x</span>
-    </button>
-    {{message}}
-</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
+<center>
+    <div class="myBox">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissable" role="alert">
+            <button aria-label="close" class="close" data-dismiss="alert" type="button">
+                <span aria-hidden="true">x</span>
+            </button>
+            {{message}}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-<form action="/profile" method="POST">
-    {{ profileForm.hidden_tag() }}
-    {{ wtf.form_field(profileForm.username) }}
-    {{ wtf.form_field(profileForm.email) }}
-    {{ wtf.form_field(profileForm.password) }}
-    {{ wtf.form_field(profileForm.confirmPassword) }}
-    {{ wtf.form_field(profileForm.submit) }}
-</form>
+        <form action="/profile" method="POST">
+            {{ profileForm.hidden_tag() }}
+            {{ wtf.form_field(profileForm.username) }}
+            {{ wtf.form_field(profileForm.email) }}
+            {{ wtf.form_field(profileForm.password) }}
+            {{ wtf.form_field(profileForm.confirmPassword) }}
+            {{ wtf.form_field(profileForm.submit) }}
+        </form>
+    </div>
+</center>
 
 {% endblock %}
 

@@ -1,0 +1,30 @@
+.myBox{
+    margin-top: 12em;
+    color: #E2ECFF;
+    background-color: #5680E9;
+    padding: 20px;
+    width: 30em;
+    border-radius: 10px;
+}
+
+.recoverPassword{
+    background:none;
+    border:none;
+    margin:8px;
+    padding:0;
+    color: #E2ECFF;
+}
+
+.btn {
+    background-color: #E2ECFF;
+    color: #5680E9;
+    width: 15em;
+}
+
+.help-block{
+    color: #f84d3c;
+}
+
+#username{
+    background-color: #c9c9c9;
+}

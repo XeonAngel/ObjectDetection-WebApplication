@@ -1,38 +1,56 @@
 {% extends 'base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block styles %}{% endblock %}
+{% block styles %}
+<link href="{{url_for('static', filename='css/login.css')}}" rel="stylesheet">
+{% endblock %}
 {% block title %} Login {% endblock %}
 
 {% block body %}
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-{% for message in messages %}
-<div class="alert alert-danger alert-dismissable" role="alert">
-    <button aria-label="close" class="close" data-dismiss="alert" type="button">
-        <span aria-hidden="true">x</span>
-    </button>
-    {{message}}
-</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
+<center>
+    <div class="myBox">
+        <h1>Object Detector</h1>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-danger alert-dismissable" role="alert">
+            <button aria-label="close" class="close" data-dismiss="alert" type="button">
+                <span aria-hidden="true">x</span>
+            </button>
+            {{message}}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-<form action="/login" method="POST">
-    {{ loginForm.hidden_tag() }}
-    {{ wtf.form_field(loginForm.username) }}
-    {{ wtf.form_field(loginForm.password) }}
-    {{ wtf.form_field(loginForm.remember) }}
-    {{ wtf.form_field(loginForm.submit) }}
-</form>
+        <div class="loginForm" id="loginForm">
+            <form action="/login" method="POST">
+                {{ loginForm.hidden_tag() }}
+                {{ wtf.form_field(loginForm.username) }}
+                {{ wtf.form_field(loginForm.password) }}
+                {{ wtf.form_field(loginForm.remember) }}
+                {{ wtf.form_field(loginForm.submit) }}
+            </form>
+            <button class="recoverPassword" onClick="toggleLogin()">
+                Recover Password
+            </button>
+        </div>
 
-<form action="/resetPassword" method="POST">
-    {{ newPasswordForm.hidden_tag() }}
-    {{ wtf.form_field(newPasswordForm.email) }}
-    {{ wtf.form_field(newPasswordForm.submit) }}
-</form>
-
+        <div class="resetPasswordForm" id="resPassForm" style="display: none">
+            <form action="/resetPassword" method="POST">
+                {{ newPasswordForm.hidden_tag() }}
+                {{ wtf.form_field(newPasswordForm.email) }}
+                {{ wtf.form_field(newPasswordForm.submit) }}
+            </form>
+            <button class="recoverPassword" onClick="toggleLogin()">
+                Back to login
+            </button>
+        </div>
+    </div>
+</center>
 {% endblock %}
 
-{% block scripts %} {% endblock %}
+{% block scripts %}
+<script src="{{url_for('static', filename='javaScript/login.js')}}"></script>
+{% endblock %}

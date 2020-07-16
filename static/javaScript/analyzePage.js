@@ -220,13 +220,13 @@ function analyzeData(url) {
 
 function getProgress() {
     $.ajax({
-        url: '/getTrainingProgress',
+        url: '/getDetectionProgress',
         type: 'post',
         success: function (response) {
             // Perform operation on the return value
             let progressValue = Math.floor(response.message)
             analyze_progress.setAttribute("style", `width: ${Math.floor(response.message)}%`);
-            analyze_progress.innerText = `${Math.floor(response.message)}% uploaded`;
+            analyze_progress.innerText = `${Math.floor(response.message)}% analyzed`;
 
             if (progressValue == 100) {
                 clearInterval(timedFunction)

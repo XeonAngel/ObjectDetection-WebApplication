@@ -22,7 +22,7 @@ from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import InputRequired, Email, Length, EqualTo, ValidationError
 
-app = Flask(__name__)  # TODO: Modificat Secretkey To ceva gen b'_5#y2L"F4Q8z\n\xec]/' creat automat
+app = Flask(__name__)
 app.config.from_pyfile('config.cfg')
 db = SQLAlchemy(app)
 mail = Mail(app)
@@ -90,12 +90,17 @@ class Users(UserMixin, db.Model):
 
     history = db.relationship('History', backref='user')  # TODO: Astea ar trebui sa fie lazy='dynamic'
 
-    def __init__(self, username, email, password, isAdmin, TotalImagesScanned):
+    def __init__(self, username, email, password, isAdmin, TotalImagesScanned, detectPid, scanProgress, trainPid,
+                 trainProgress):
         self.username = username
         self.email = email
         self.password = password
         self.isAdmin = isAdmin
         self.TotalImagesScanned = TotalImagesScanned
+        self.detectPid = detectPid
+        self.scanProgress = scanProgress
+        self.trainPid = trainPid
+        self.trainProgress = trainProgress
 
 
 class History(db.Model):
@@ -132,7 +137,9 @@ class HistoryClasses(db.Model):
 class RegisterForm(FlaskForm):
     username = StringField('Username', validators=[InputRequired(), Length(min=8, max=50)])
     password = PasswordField('Password', validators=[InputRequired(), Length(min=10, max=100)])
-    # TODO de pus ConfirmPassword
+    confirmPassword = PasswordField('Repeat Password', validators=[InputRequired(), Length(min=10, max=100),
+                                                                   EqualTo('password',
+                                                                           message='Passwords must match')])
     submit = SubmitField('Register')
 
     def validate_password(self, field):
@@ -173,7 +180,7 @@ class NewPasswordForm(FlaskForm):
 
 
 class ProfileForm(FlaskForm):
-    username = StringField('Username', validators=[InputRequired(), Length(min=8, max=50)])
+    username = StringField('Username', validators=[Length(min=0, max=50)], render_kw={'disabled': ''})
     email = EmailField('Email', validators=[InputRequired(), Email()])
     password = PasswordField('Password')
     confirmPassword = PasswordField('Repeat Password',
@@ -250,7 +257,7 @@ def analyzer():
         res = make_response(jsonify({"message": "Scan started"}), 200)
         return res
 
-    classifierList = db.session.query(Classifiers.name).all()
+    classifierList = db.session.query(Classifiers.name).filter(Classifiers.isDeployed == 1).all()
 
     return render_template("analyzerPage/analyzerPage.html",
                            isAdminOnPage=current_user.isAdmin, classifierList=classifierList,
@@ -260,7 +267,7 @@ def analyzer():
 @app.route("/getDetectionProgress", methods=['POST'])
 @login_required
 def getDetectionProgress():
-    userScanProgress = db.session.query(Users.scanProgress).filter(Users.id == current_user.id).first()
+    userScanProgress = db.session.query(Users).filter(Users.id == current_user.id).first()
     if userScanProgress.scanProgress == 100:
         userScanProgress.scanProgress = -1
         db.session.commit()
@@ -363,7 +370,7 @@ def analyzerProgressCount():
 @app.route("/analyzerShowResult")
 @login_required
 def analyzerShowResult():
-    classifierList = db.session.query(Classifiers.name).all()
+    classifierList = db.session.query(Classifiers.name).filter(Classifiers.isDeployed == 1).all()
     classList = db.session.query(Classes.name).distinct(Classes.name).all()
     firstFiveClassList = []
     for i in range(0, 5):
@@ -376,7 +383,7 @@ def analyzerShowResult():
         .group_by(History.id) \
         .all()
 
-    return render_template("historyPage.html", isAdminOnPage=current_user.isAdmin,
+    return render_template("historyPage/historyPage.html", isAdminOnPage=current_user.isAdmin,
                            classifierList=classifierList,
                            classList=classList,
                            firstFiveClassList=firstFiveClassList,
@@ -399,15 +406,16 @@ def classifiers():
 @app.route("/userclassifierslist/<classToFind>")
 @login_required
 def userclassifierslist(classToFind):
-    # TODO: Move Classifers to another iframe just add mode than one page can see and test it
-    # TODO: Alphabetic Sort
     if classToFind == "all":
-        classifierList = db.session.query(Classifiers.name).all()
+        classifierList = db.session.query(Classifiers.name) \
+            .filter(Classifiers.isDeployed == 1) \
+            .all()
     else:
         classifierList = db.session.query(Classifiers.name) \
             .outerjoin(Classes, Classifiers.id == Classes.classifierId) \
             .filter(Classes.name.contains(classToFind)) \
             .filter(Classes.name is not None) \
+            .filter(Classifiers.isDeployed == 1) \
             .distinct(Classifiers.name) \
             .all()
     return render_template("iframes/userClassifiersIframe.html", classifierList=classifierList)
@@ -422,7 +430,9 @@ def classesforclassifier(classifier):
         classList = db.session.query(Classes.name) \
             .outerjoin(Classifiers, Classifiers.id == Classes.classifierId) \
             .filter(Classifiers.name.contains(classifier)) \
-            .filter(Classifiers.name is not None).all()
+            .filter(Classifiers.name is not None) \
+            .order_by(Classes.name) \
+            .all()
     return render_template("iframes/userClassesListIframe.html", classList=classList)
 
 
@@ -636,7 +646,7 @@ def history():
 
         if classFilterList:
             filterList.append(Classes.name.in_(classFilterList))
-            imagePaths = db.session.query(History.imagePath) \
+            imagePaths = db.session.query(History.imagePath, History.id) \
                 .outerjoin(Classifiers, Classifiers.id == History.classifierId) \
                 .outerjoin(HistoryClasses, HistoryClasses.historyId == History.id) \
                 .outerjoin(Classes, Classes.id == HistoryClasses.classId) \
@@ -653,7 +663,7 @@ def history():
                 .group_by(History.id) \
                 .all()
 
-        return render_template("historyPage.html", isAdminOnPage=current_user.isAdmin,
+        return render_template("historyPage/historyPage.html", isAdminOnPage=current_user.isAdmin,
                                classifierList=classifierList,
                                classList=classList,
                                firstFiveClassList=firstFiveClassList,
@@ -661,7 +671,7 @@ def history():
                                searchResultNumber=len(imagePaths),
                                givenUsername=current_user.username)
     else:
-        return render_template("historyPage.html", isAdminOnPage=current_user.isAdmin,
+        return render_template("historyPage/historyPage.html", isAdminOnPage=current_user.isAdmin,
                                classifierList=classifierList,
                                classList=classList,
                                firstFiveClassList=firstFiveClassList,
@@ -728,7 +738,7 @@ def users():
         .filter(Users.isAdmin == 0) \
         .all()
 
-    return render_template("usersPage.html", userList=userList)
+    return render_template("userPage/usersPage.html", userList=userList)
 
 
 @app.route("/usersDelete/<userId>", methods=['GET'])
@@ -779,7 +789,11 @@ def createNewUser(token):
         except SignatureExpired:
             flash("The link has expired")
             return render_template("register_loginPages/registerPage.html", form=form, token=token)
-        user = Users(form.username.data, email, generate_password_hash(form.password.data), 0, 0)
+        userExist = db.session.query(Users.id).filter(Users.username == form.username.data).first()
+        if userExist:
+            flash("Username taken")
+            return render_template("register_loginPages/registerPage.html", form=form, token=token)
+        user = Users(form.username.data, email, generate_password_hash(form.password.data), 0, 0, 0, 0, 0, 0)
         db.session.add(user)
         db.session.commit()
         return redirect(url_for('login'))
@@ -895,7 +909,6 @@ def profile():
 
     if profileForm.validate_on_submit():
         user = Users.query.filter_by(id=current_user.id).first()
-        user.username = profileForm.username.data
         user.email = profileForm.email.data
         if profileForm.password.data:
             user.password = generate_password_hash(profileForm.password.data)

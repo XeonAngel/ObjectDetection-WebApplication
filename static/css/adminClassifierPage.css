@@ -1,0 +1,113 @@
+.container{
+    margin-top: 5vh;
+}
+
+.row{
+    margin: -10px -10px 20px -10px;
+}
+
+#classifierFilter{
+    padding: 10px;
+    width: 25%;
+    background-color: white;
+    border-radius: 6px;
+    border: solid darkgray 1px;
+}
+
+#searchClassifier {
+    width: 100%;
+    background-image: url('/static/icons/icon-regular-icon-bx-search-alt.png');
+    background-position: 5px 5px;
+    background-repeat: no-repeat;
+    padding: 12px 20px 12px 50px;
+    border: 1px solid darkgray;
+    border-radius: 6px;
+    background-color: #8860D0;
+    color: white;
+}
+
+.classList{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border: solid darkgray 1px;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.classListItem{
+    width: 5vw;
+    display: inline;
+    margin-left: 10px;
+}
+
+.labelClass{
+    margin-bottom: 0;
+}
+
+.btn {
+    margin-top: 20px;
+    background-color: #5680E9;
+    color: white;
+    width: 100%;
+}
+
+#classifierDetailSection{
+    padding: 10px;
+    width: 75%;
+    background-color: white;
+    border-radius: 6px;
+    border: solid darkgray 1px;
+    margin-left: 10px;
+}
+
+.listGroup {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.listItem {
+    border: 1px solid darkgray;
+    background-color: #F2F2F2;
+    color: #5680E9;
+    display: inline-block;
+    width: 30%;
+    padding: 5px;
+    border-radius: 6px;
+    min-width: 15em;
+    margin: 5px;
+}
+
+.button-group{
+    width: 100%;
+}
+
+.button-group .button{
+    width: 33.3333333333333%;
+    height: 45px;
+    background-color: #E2ECFF;
+    border: 1px solid darkgray;
+    color: #5fa2db;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    float: left;
+}
+
+.button-group .button:not(:last-child) {
+    border-right: none;
+}
+
+.button-group .active, .button-group .button:hover {
+    background-color: #8860D0;
+    color: #F2F2F2;
+}
+
+.button-group .left_button{
+    border-top-left-radius: 6px;
+}
+
+.button-group .right_button{
+    border-top-right-radius: 6px;
+}

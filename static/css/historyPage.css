@@ -1,4 +1,69 @@
-img {
+.container{
+    margin-top: 5vh;
+}
+
+#filters_col{
+    width: 25%;
+    background-color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: solid darkgray 1px;
+    margin-right: 10px;
+}
+
+.form-group{
+    margin: 0px;
+}
+
+#searchClass {
+    width: 100%;
+    margin-top: 8%;
+    background-image: url('/static/icons/icon-regular-icon-bx-search-alt.png');
+    background-position: 5px 5px;
+    background-repeat: no-repeat;
+    padding: 12px 20px 12px 50px;
+    border: 1px solid darkgray;
+    border-radius: 6px;
+    background-color: #8860D0;
+    color: white;
+    margin-bottom: 10px;
+}
+
+#classesSection .classList{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border: solid darkgray 1px;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+#classesSection .classList .classListItem{
+    width: 5vw;
+    display: inline;
+    margin-left: 10px;
+}
+
+.btn {
+    background-color: #5680E9;
+    color: white;
+    width: 100%;
+}
+
+#results_col{
+    width: 74%;
+    background-color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: solid darkgray 1px;
+}
+
+#results_col .imagePreview{
     width: 200px;
-    height: 200px;
+    height: 125px;
+    padding: 5px;
+}
+
+.imagePreview{
+    width:600px;
+    height: 400px;
 }

@@ -1,31 +1,36 @@
 {% extends 'base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block styles %}{% endblock %}
+{% block styles %}
+<link href="{{url_for('static', filename='css/login.css')}}" rel="stylesheet">
+{% endblock %}
 {% block title %} Register {% endblock %}
 
 {% block body %}
+<center>
+    <div class="myBox">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-danger alert-dismissable" role="alert">
+            <button aria-label="close" class="close" data-dismiss="alert" type="button">
+                <span aria-hidden="true">x</span>
+            </button>
+            {{message}}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-{% for message in messages %}
-<div class="alert alert-danger alert-dismissable" role="alert">
-    <button aria-label="close" class="close" data-dismiss="alert" type="button">
-        <span aria-hidden="true">x</span>
-    </button>
-    {{message}}
-</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
-
-<form method="POST" action="/createNewUser/{{token}}">
-    {{ form.hidden_tag() }}
-    {{ wtf.form_field(form.username) }}
-    {{ wtf.form_field(form.password) }}
-    {{ wtf.form_field(form.submit) }}
-</form>
-
+        <form action="/createNewUser/{{token}}" method="POST">
+            {{ form.hidden_tag() }}
+            {{ wtf.form_field(form.username) }}
+            {{ wtf.form_field(form.password) }}
+            {{ wtf.form_field(form.confirmPassword) }}
+            {{ wtf.form_field(form.submit) }}
+        </form>
+    </div>
+</center>
 {% endblock %}
 
 {% block scripts %} {% endblock %}

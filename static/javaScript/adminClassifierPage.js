@@ -16,6 +16,11 @@ $('document').ready(function () {
     $(document).on('click', '#ClassesDivButton', function () {
         if (document.getElementById("ClassesDiv").classList.contains('d-none')) {
             document.getElementById("ClassesDiv").classList.remove('d-none');
+
+            document.getElementById("ClassesDivButton").classList.add('active')
+            document.getElementById("DetailsDivButton").classList.remove('active')
+            document.getElementById("TrainDivButton").classList.remove('active')
+
             if (document.getElementById("DetailsDiv").classList.contains('d-none')) {
                 document.getElementById("TrainDiv").classList.add('d-none');
             } else {
@@ -26,6 +31,11 @@ $('document').ready(function () {
     $(document).on('click', '#DetailsDivButton', function () {
         if (document.getElementById("DetailsDiv").classList.contains('d-none')) {
             document.getElementById("DetailsDiv").classList.remove('d-none');
+
+            document.getElementById("ClassesDivButton").classList.remove('active')
+            document.getElementById("DetailsDivButton").classList.add('active')
+            document.getElementById("TrainDivButton").classList.remove('active')
+
             if (document.getElementById("ClassesDiv").classList.contains('d-none')) {
                 document.getElementById("TrainDiv").classList.add('d-none');
             } else {
@@ -36,6 +46,11 @@ $('document').ready(function () {
     $(document).on('click', '#TrainDivButton', function () {
         if (document.getElementById("TrainDiv").classList.contains('d-none')) {
             document.getElementById("TrainDiv").classList.remove('d-none');
+
+            document.getElementById("ClassesDivButton").classList.remove('active')
+            document.getElementById("DetailsDivButton").classList.remove('active')
+            document.getElementById("TrainDivButton").classList.add('active')
+
             if (document.getElementById("DetailsDiv").classList.contains('d-none')) {
                 document.getElementById("ClassesDiv").classList.add('d-none');
             } else {

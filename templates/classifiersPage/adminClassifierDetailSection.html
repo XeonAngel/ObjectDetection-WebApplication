@@ -1,14 +1,15 @@
 <div class="row">
     <div class="button-group" id="button-groupID">
-        <button class="button left_button active" id="ClassesDivButton">Classes</button>
-        <button class="button" id="DetailsDivButton">Details</button>
-        <button class="button right_button" id="TrainDivButton">Train</button>
+        <button class="button left_button active" id="ClassesDivButton">Classes</button><button
+            class="button" id="DetailsDivButton">Details</button><button
+            class="button right_button" id="TrainDivButton">Train</button>
     </div>
 </div>
 <div class="row" id="ClassesDiv">
     <div class="col">
-        Classes
         <center>
+        Class List
+            <hr>
             <ul class="listGroup" id="classList">
                 {%for classes in classList%}
                 <li class="listItem">{{classes[0]}}</li>

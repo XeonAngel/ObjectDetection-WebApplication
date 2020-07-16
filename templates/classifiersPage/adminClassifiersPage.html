@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block styles %}
-<link href="{{url_for('static', filename='css/userClassifiersPage.css')}}" rel="stylesheet">{% endblock %}
+<link href="{{url_for('static', filename='css/adminClassifierPage.css')}}" rel="stylesheet">{% endblock %}
 {% block title %} Classifier {% endblock %}
 
 
@@ -10,7 +10,7 @@
 
 <div class="container">
     <div class="row">
-        <div class="col-sm">
+        <div id="classifierFilter">
             <input id="searchClassifier" placeholder="Search for classifier.." type="text">
             <form action="/updateDeployedClassifiers" method="post">
                 <div id="classifierSection">
@@ -21,17 +21,18 @@
                                {%endif%}
                                name="classifierCheckBox"
                                type="checkbox" value="{{classifier.name}}">
-                        <label onclick="showDetails('{{classifier.name}}')">
-                            {{classifier.name}}
+                        <label class="labelClass" onclick="showDetails('{{classifier.name}}')">
+                            <div class="classListItem">
+                                {{classifier.name}}
+                            </div>
                         </label>
                     </div>
                     {%endfor%}
                 </div>
-                <button type="submit">Apply changes</button>
+                <button class="btn" type="submit">Apply changes</button>
             </form>
         </div>
         <div class="col" id="classifierDetailSection">
-            One of three columns
         </div>
     </div>
 </div>
